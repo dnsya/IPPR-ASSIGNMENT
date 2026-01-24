@@ -1,4 +1,4 @@
-function assignment_test() 
+function assignment() 
     loaded_images = {};      
     image_filenames = {};    
     current_index = 1;
@@ -126,15 +126,15 @@ function assignment_test()
 
 
         % Dialog Panel
-    dialog_panel = uipanel(right_column, ...
-        'Title', 'Dialog', ...
+    console_panel = uipanel(right_column, ...
+        'Title', 'Console', ...
         'Position', [5 5 565 190], ...
         'BackgroundColor', colors.bg_light, ...
         'ForegroundColor', colors.accent_purple, ...
         'HighlightColor', colors.accent_purple, ...
         'FontSize', 10);
 
-    dialog_ui = uitextarea(dialog_panel, ...
+    console_ui = uitextarea(console_panel, ...
         'Position', [5 5 555 162.5], ...
         'Value', {'Upload Images to start!'}, ...
         'FontSize', 11, ...
@@ -145,24 +145,25 @@ function assignment_test()
 
     % Callback Functions 
     function load_images(~, ~) 
-        add_dialog('Uploading Files...');
+        add_log('Uploading Files...');
         
+        % Extract the file name and file path from the selected file
         [filenames, filepath] = uigetfile({ ...
             '*.jpg;*.jpeg;*.png;*.bmp', 'Image Files'; ...
             '*.*', 'All Files'...
             }, "Select Files", ...
-            "MultiSelect", "on");
+            "MultiSelect", "on");   % Enable multiselect to upload multiple files
 
         if isequal(filenames, 0)
-            add_dialog('Upload Cancelled');
+            add_log('Upload Cancelled');
             return;
         end
         
         if ~iscell(filenames)
-            filenames = {filenames};
-            add_dialog('One file detected');
+            filenames = {filenames};    % Convert the single element into a cell array
+            add_log('One file detected');
         else
-            add_dialog(['Multiple files detected: ' num2str(length(filenames))]);
+            add_log(['Multiple files detected: ' num2str(length(filenames))]);
         end
         
         % Clear the containers!
@@ -175,12 +176,12 @@ function assignment_test()
                 fullpath = fullfile(filepath, filenames{i});
 
                 img = imread(fullpath);
-                loaded_images{i} = img;
-                image_filenames{i} = filenames{i};
+                loaded_images{i} = img; % Add all the images into the variable
+                image_filenames{i} = filenames{i};  % All all the names into the variable
     
-                add_dialog(['Loaded: ' filenames{i}]);
+                add_log(['Loaded: ' filenames{i}]);
             catch ME
-                add_dialog(['Error loading ' filenames{i} ': ' ME.message]);
+                add_log(['Error loading ' filenames{i} ': ' ME.message]);
             end
         end
 
@@ -189,7 +190,7 @@ function assignment_test()
             disable_button();
             gallery_images();
 
-            add_dialog(['Loaded ' num2str(length(loaded_images)) ' images']);
+            add_log(['Loaded ' num2str(length(loaded_images)) ' images']);
         end
     end
 
@@ -198,7 +199,7 @@ function assignment_test()
             return;
         end
 
-        img = loaded_images{current_index};
+        img = loaded_images{current_index}; % Load the current image index
         filename = image_filenames{current_index};
 
         imshow(img, 'Parent', image_ax);
@@ -207,13 +208,14 @@ function assignment_test()
 
     % Gallery Functions
     function gallery_images()
+        % Clear all the thumbnails first
         delete(thumbnail_panel.Children);
         
         if isempty(loaded_images)
             return;
         end
     
-        active_image = length(loaded_images);
+        active_image = length(loaded_images);   % Find the number of images
         cols = min(4, active_image);
         rows = ceil(active_image / cols);
 
@@ -229,10 +231,12 @@ function assignment_test()
             x = thumb_width * col + ((thumb_margin * col) / 2) + thumb_margin;
             y = thumb_height * flipped_row;
     
+            % If there is only 1 row, ensure the picture is in the top of the gallery
             if rows == 1
                 y = thumbnail_panel.Position(4) - thumb_height - thumb_margin;
             end
 
+            % Set the images to the gallery
             thumb_ax = uiaxes(thumbnail_panel, ...
                 'Position', [x y thumb_width thumb_height]);
             thumb_ax.XTick = [];
@@ -242,6 +246,7 @@ function assignment_test()
             imshow(thumbnail, 'Parent', thumb_ax);
             title(thumb_ax, ['#' num2str(i) ' ' image_filenames{i}]);
     
+            % Create set img to the images in the gallery, to be clickable
             img = findobj(thumb_ax, 'Type', 'image');
             img.ButtonDownFcn = @(src,event) click_image(i);
         end
@@ -251,21 +256,24 @@ function assignment_test()
         current_index = index;
         display_images();
         disable_button();
-        add_dialog(['Viewing Image: #' num2str(current_index)]);
+        add_log(['Viewing Image: #' num2str(current_index)]);
     end
 
     % Navigation Functions
     function next_image(~, ~)
         if current_index < length(loaded_images)
+            % Increase the index and dispaly it
             current_index = current_index + 1;
             display_images();
-            button_previous.Enable = "on";
 
-            add_dialog(['Next Image: #' num2str(current_index)]);
+            % By moving to the next image, then the previous image is now available to be chosen.
+            button_previous.Enable = "on";  
+
+            add_log(['Next Image: #' num2str(current_index)]);
         else
-            button_next.Enable = "off";
+            button_next.Enable = "off"; % If there is no next image, disable the button
 
-            add_dialog(sprintf( ...
+            add_log(sprintf( ...
                 'Cannot go to next image. Current image: %d / %d.', ...
                 current_index, length(loaded_images)));
         end
@@ -273,21 +281,25 @@ function assignment_test()
 
     function previous_image(~, ~)
         if current_index > 1
+            % Reduce the index and display the image
             current_index = current_index - 1;
             display_images();
+
+            % By moving to the previous image, then the next image is now available to be chosen.
             button_next.Enable = "on";
 
-            add_dialog(['Previous Image: #' num2str(current_index)]);
+            add_log(['Previous Image: #' num2str(current_index)]);
         else
-            button_previous.Enable = "off";
+            button_previous.Enable = "off"; % If there is no image previously, turn off the button
 
-            add_dialog(sprintf( ...
+            add_log(sprintf( ...
                 'Cannot go to previous image. Current image: %d / %d.', ...
                 current_index, length(loaded_images)));
         end
     end
 
     function disable_button()
+        % If there is no image, turn off the buttons
         active_image = length(loaded_images);
 
         if active_image == 0
@@ -304,53 +316,68 @@ function assignment_test()
     end
 
     function clear_images(~, ~)
+        % Clear the variables
         loaded_images = {};      
         image_filenames = {};    
         current_index = 1;
+
+        % Clear the image, gallery, and disable the button
         cla(image_ax);
         disable_button();
         delete(thumbnail_panel.Children);
         
         title(image_ax, 'Load images to start');
 
-        add_dialog('Images cleared');
+        add_log('Images cleared');
     end
 
-    function add_dialog(message) 
-        current_log = dialog_ui.Value;
+    function add_log(message) 
+        current_log = console_ui.Value;
         timestamp = char(datetime('now', 'Format', 'HH:mm:ss'));
         new_entry = ['[' timestamp '] ' message];
-        dialog_ui.Value = [current_log; new_entry];
+
+        % Concatenate the current (old) and new log
+        console_ui.Value = [current_log; new_entry];
     end
 
     % Process Functions
     function process_image()
-        add_dialog(['Processing Image #' num2str(current_index) ' ' image_filenames{current_index} '...']);
+        add_log(['Processing Image #' num2str(current_index) ' ' image_filenames{current_index} '...']);
 
         img = loaded_images{current_index};
         
         defects = [];
+        
+        % Check the defects and if there is any, concatenate them to the array
         defects = [defects; detect_holes(img)];
         defects = [defects; detect_stains(img)];
         defects = [defects; detect_missing_finger(img)];
 
+        % Draw and report the defect
         draw_defect(defects);
         report_defects(defects);
-        add_dialog('Processing Complete');
+        add_log('Processing Complete');
     end
     
     function draw_defect (defects)
+        % Clear the previous defect shape
         cla(image_ax);
+
+        if isempty(defects)
+            return;
+        end
+
         imshow(loaded_images{current_index}, 'Parent', image_ax);
         hold(image_ax, 'on');
             
         for i = 1:length(defects)
             bbox = defects(i).bbox;
+            % Add a red rectangle on the bounding box location
             rectangle(image_ax, ...
                 'Position', bbox, ...
                 'EdgeColor', colors.accent_red, ...
                 'LineWidth', 1);
-
+            
             text(image_ax, bbox(1), bbox(2) - 20, defects(i).type, ...
                 'Color', colors.accent_red, 'FontSize', 12, 'FontWeight', 'bold');
         end
@@ -360,18 +387,19 @@ function assignment_test()
 
     function report_defects(defects)
         if isempty(defects)
-            add_dialog('No defects detected');
+            add_log('No defects detected');
             return;
         end
 
-        add_dialog(['Defects detected: ' num2str(numel(defects))]);
+        add_log(['Defects detected: ' num2str(numel(defects))]);
 
+        % Report the defects X, Y axis and width, height.
         for i = 1:numel(defects)
             bbox = defects(i).bbox;
             msg = sprintf('- %s at [X: %.1f, Y: %.1f, W: %.1f, H: %.1f]', ...
                           defects(i).type, bbox(1), bbox(2), bbox(3), bbox(4));
     
-            add_dialog(msg);
+            add_log(msg);
         end
     end
 end

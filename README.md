@@ -1,9 +1,8 @@
-# IPPR-ASSIGNMENT
+# IPPR-ASSIGNMENT Nitrile (TP072895)
 
-Glove Defect Detection System
+Nitrile Glove Defect Dectection System
 
-Types of Gloves:
-1. Latex
-2. Cotton
-3. Rubber
-4. Nitrile
+Type of Defects:
+1. Hole
+2. Ink Stain
+3. Missing Finger
