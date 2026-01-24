@@ -19,7 +19,7 @@ function assignment()
 
 
     % Figures
-    main_figure = uifigure('Name', 'Assignment Test', ...
+    main_figure = uifigure('Name', 'IPPR', ...
                         'Position', [50, 100, 1100, 700], ...
                         'Color', colors.bg_black);
 
@@ -362,11 +362,6 @@ function assignment()
     function draw_defect (defects)
         % Clear the previous defect shape
         cla(image_ax);
-
-        if isempty(defects)
-            return;
-        end
-
         imshow(loaded_images{current_index}, 'Parent', image_ax);
         hold(image_ax, 'on');
             

@@ -57,7 +57,7 @@ function defects = detect_stains(img)
     skin_sat = sat < 0.35;  % Low saturation
     skin_val = (val > 0.4) & (val < 0.95);  % Not too dark, not too bright
     skin_mask = skin_hue & skin_sat & skin_val;
-    skin_mask = bwareaopen(skin_mask, 200);
+    skin_mask = bwareaopen(skin_mask, 300);
     
     % Remove skin regions from both stain masks
     stain_mask = stain_mask & ~skin_mask;
