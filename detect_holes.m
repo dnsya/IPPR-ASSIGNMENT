@@ -25,26 +25,27 @@ function defects = detect_holes(img)
     potential_holes = bwareaopen(potential_holes, 300);
     
     % Create black and white picture to get the glove outline
-    bw = ~imbinarize(gray, 0.325);
-    bw = bwareaopen(bw, 500);
-    glove_filled = imfill(bw, 'holes');
+    glove_binary = ~imbinarize(gray, 0.325);
+    glove_binary = bwareaopen(glove_binary, 500);
+    glove_filled = imfill(glove_binary, 'holes');
     glove_region = bwareaopen(glove_filled, 5000);
     
     % Merge the potential holes and glove outline
     holes_final = potential_holes & glove_region;
     
     % Analyze the regions in the gloves
-    stats = regionprops(holes_final, 'BoundingBox', 'Area', 'Solidity', 'Perimeter');
+    hole_props = regionprops(holes_final, 'BoundingBox', 'Area', 'Solidity', ...
+        'Perimeter');
     
     % Loop through all the regions
-    for k = 1:numel(stats)
-        area = stats(k).Area;
-        solidity = stats(k).Solidity;
-        circularity = 4 * pi * area / (stats(k).Perimeter^2);
+    for k = 1:numel(hole_props)
+        area = hole_props(k).Area;
+        solidity = hole_props(k).Solidity;
+        circularity = 4 * pi * area / (hole_props(k).Perimeter^2);
         
         if area > 400 && area < 40000 && solidity > 0.4 && circularity > 0.2
             d.type = ['Hole ' int2str(counter)];
-            d.bbox = stats(k).BoundingBox;
+            d.bbox = hole_props(k).BoundingBox;
             defects = [defects; d];
             counter = counter + 1;
         end

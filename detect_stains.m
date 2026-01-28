@@ -2,12 +2,11 @@ function defects = detect_stains(img)
     defects = [];
     counter = 1;
     
-    gray_image = rgb2gray(img);
-    filtered_image = medfilt2(gray_image, [3,3]);
+    gray = rgb2gray(img);
+    filtered_image = medfilt2(gray, [3,3]);
     
     % Invert the image to better spot the stain
-    threshold_value = 0.45;
-    binary_image = imbinarize(filtered_image, threshold_value);
+    binary_image = imbinarize(filtered_image, 0.45);
     inverted_binary_image = ~binary_image;
     inverted_binary_image = imopen(inverted_binary_image, strel('disk',3));
     
@@ -23,9 +22,9 @@ function defects = detect_stains(img)
     
     % Find the bright areas and clean up the region
     defect_mask = imopen(inverted_binary_image, strel(ones(5)));
-    stain_mask = glove_mask & ~defect_mask;
-    stain_mask = imopen(stain_mask, strel('square',2));
-    stain_mask = stain_mask & glove_interior;
+    light_stain_mask = glove_mask & ~defect_mask;
+    light_stain_mask = imopen(light_stain_mask, strel('square',2));
+    light_stain_mask = light_stain_mask & glove_interior;
     
     % Extract the hsv values from the image
     hsv_image = rgb2hsv(img);
@@ -36,10 +35,10 @@ function defects = detect_stains(img)
     % detect the bright, colourful regions and calculate the gradient magnitude
     is_bright = val > 0.75;
     is_colorful = sat > 0.2;
-    edge_strength = imgradient(gray_image);
+    edge_strength = imgradient(gray);
     high_edge = edge_strength > 0.05;
     reflection_mask = is_bright & ~is_colorful & ~high_edge;
-    stain_mask(reflection_mask) = 0;
+    light_stain_mask(reflection_mask) = 0;
     
     % Find the more common stain (red & yellow) that are not that bright
     red_hue = (hue < 0.15) | (hue > 0.85);
@@ -60,17 +59,18 @@ function defects = detect_stains(img)
     skin_mask = bwareaopen(skin_mask, 300);
     
     % Remove skin regions from both stain masks
-    stain_mask = stain_mask & ~skin_mask;
+    light_stain_mask = light_stain_mask & ~skin_mask;
     dark_stain_mask = dark_stain_mask & ~skin_mask;
     
     % Combine bright and dark stains
-    combined_stain_mask = stain_mask | dark_stain_mask;
+    combined_stain_mask = light_stain_mask | dark_stain_mask;
     
     % Find the connected components and calculate the eccentricity (elongation)
-    stain_cc = bwconncomp(combined_stain_mask);
-    stain_props = regionprops(stain_cc, 'BoundingBox','Area','Eccentricity');
+    connected_components = bwconncomp(combined_stain_mask);
+    stain_props = regionprops(connected_components, 'BoundingBox','Area', ...
+        'Eccentricity');
         
-    for k = 1:stain_cc.NumObjects
+    for k = 1:connected_components.NumObjects
         area = stain_props(k).Area;
         ecc = stain_props(k).Eccentricity;
         bbox = stain_props(k).BoundingBox;

@@ -187,10 +187,9 @@ function assignment()
 
         if ~isempty(loaded_images)
             display_images();
-            disable_button();
             gallery_images();
-
             add_log(['Loaded ' num2str(length(loaded_images)) ' images']);
+            disable_button();
         end
     end
 
@@ -255,8 +254,8 @@ function assignment()
     function click_image(index)
         current_index = index;
         display_images();
-        disable_button();
         add_log(['Viewing Image: #' num2str(current_index)]);
+        disable_button();
     end
 
     % Navigation Functions
@@ -265,17 +264,9 @@ function assignment()
             % Increase the index and dispaly it
             current_index = current_index + 1;
             display_images();
-
-            % By moving to the next image, then the previous image is now available to be chosen.
-            button_previous.Enable = "on";  
-
+            disable_button();
             add_log(['Next Image: #' num2str(current_index)]);
-        else
-            button_next.Enable = "off"; % If there is no next image, disable the button
-
-            add_log(sprintf( ...
-                'Cannot go to next image. Current image: %d / %d.', ...
-                current_index, length(loaded_images)));
+            disable_button();
         end
     end
 
@@ -284,17 +275,8 @@ function assignment()
             % Reduce the index and display the image
             current_index = current_index - 1;
             display_images();
-
-            % By moving to the previous image, then the next image is now available to be chosen.
-            button_next.Enable = "on";
-
             add_log(['Previous Image: #' num2str(current_index)]);
-        else
-            button_previous.Enable = "off"; % If there is no image previously, turn off the button
-
-            add_log(sprintf( ...
-                'Cannot go to previous image. Current image: %d / %d.', ...
-                current_index, length(loaded_images)));
+            disable_button();
         end
     end
 
@@ -312,6 +294,18 @@ function assignment()
             button_clear.Enable = "on";
             button_next.Enable = "on";
             button_previous.Enable = "on";
+        end
+
+        if current_index == 1
+            button_previous.Enable = "off";
+            add_log(sprintf( ...
+                'Cannot go to previous image. Current image: %d / %d.', ...
+                current_index, length(loaded_images)));
+        elseif current_index == length(loaded_images)
+            button_next.Enable = "off";
+            add_log(sprintf( ...
+                'Cannot go to next image. Current image: %d / %d.', ...
+                current_index, length(loaded_images)));
         end
     end
 
