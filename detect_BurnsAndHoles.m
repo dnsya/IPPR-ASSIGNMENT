@@ -24,8 +24,6 @@ function [burnBoxes, holeBoxes, numBurns, numHoles] = detect_BurnsAndHoles(img, 
 % Classification Features:
 %   BURNS: Low saturation, dark value, irregular shape, rough texture, larger
 %   HOLES: High saturation, reddish, circular shape, sharp edges, smaller
-%
-% Based on: Rubber_BurnMark_n_Hole.m
 
     % Detection parameters
     PARAMS = struct();
