@@ -162,6 +162,7 @@ classdef RubberGloveDDSystem < matlab.apps.AppBase
             % Show figure
             app.UIFigure.Visible = 'on';
             movegui(app.UIFigure,'center');
+            app.UIFigure.Resize = 'off';
         end
 
         %% Image Gallery Functions
