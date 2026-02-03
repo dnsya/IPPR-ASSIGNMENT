@@ -1,9 +1,10 @@
 # IPPR-ASSIGNMENT
 
-Glove Defect Detection System
+Cotton Glove Defect Detection System
 
-Types of Gloves:
-1. Latex
-2. Cotton
-3. Rubber
-4. Nitrile
+Done by: Nesya DN
+
+Types of Glove Defects:
+1. Cuff Cuts
+2. Dust
+3. Loose Yarn
