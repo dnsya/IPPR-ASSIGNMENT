@@ -1,4 +1,4 @@
-classdef RubberGloveDDSystem < matlab.apps.AppBase
+classdef GloveDefectDetectionAppG4 < matlab.apps.AppBase
     % Glove Defect Detection App (Optimized & Fully Fixed)
 
     %% Properties
@@ -31,21 +31,28 @@ classdef RubberGloveDDSystem < matlab.apps.AppBase
         CurrentImageIndex = 0
         CurrentImage = []
         GalleryButtons = {}    % Gallery thumbnail panels
-        BGColor = [0.15 0.15 0.15]; % dark
-        SCColor = [0.9725,0.9608,0.2745];
+        BGColor = [0.15, 0.15, 0.15]; % dark
+        SCColor = [0.95, 0.85, 0.10];
     end
 
     %% Private Methods
     methods (Access = private)
 
-        %% Helper Functions
         function btn = createButton(~, parent, text, pos, bgColor, callback)
             btn = uibutton(parent, 'push');
             btn.Text = text;
             btn.Position = pos;
             btn.FontWeight = 'bold';
             btn.BackgroundColor = bgColor;
-            btn.FontColor = [1 1 1];
+            
+            % FIX: If background is bright (Cyan/Yellow), use Black text. 
+            % Otherwise, use White text.
+            if sum(bgColor) > 1.5
+                btn.FontColor = [0 0 0]; % Black
+            else
+                btn.FontColor = [1 1 1]; % White
+            end
+            
             btn.ButtonPushedFcn = callback;
         end
 
@@ -134,17 +141,17 @@ classdef RubberGloveDDSystem < matlab.apps.AppBase
             % Control Panel
             app.ControlPanel = uipanel(app.UIFigure,'Title','Controls','FontWeight','bold', ...
                                        'Position',[720 220 470 200],'BackgroundColor', app.BGColor);
-            app.ImportButton = createButton(app, app.ControlPanel,'Import Images',[15 110 150 45],[0 0.4667 0.6588], @(btn,event) app.ImportButtonPushed());
-            app.AnalyzeButton = createButton(app, app.ControlPanel,'Analyze',[180 110 130 45],[0.1569 0.6549 0.2706], @(btn,event) app.AnalyzeButtonPushed());
-            app.ClearButton   = createButton(app, app.ControlPanel,'Clear',[325 110 130 45],[0.8627 0.2078 0.2706], @(btn,event) app.ClearButtonPushed());
-            app.PreviousButton = createButton(app, app.ControlPanel,'← Previous',[15 50 150 45],[1 0.7608 0.0275], @(btn,event) app.PreviousButtonPushed());
-            app.NextButton = createButton(app, app.ControlPanel,'Next →',[180 50 130 45],[1 0.7608 0.0275], @(btn,event) app.NextButtonPushed());
-            app.ResetButton = createButton(app, app.ControlPanel,'Reset',[325 50 130 45],[0.95, 0.36, 0.02], @(btn,event) app.ResetButtonPushed());
+            app.ImportButton = createButton(app, app.ControlPanel,'Import Images',[15 110 150 45],[0.00, 0.75, 0.90], @(btn,event) app.ImportButtonPushed());
+            app.AnalyzeButton = createButton(app, app.ControlPanel,'Analyze',[180 110 130 45],[0.70, 0.95, 0.00], @(btn,event) app.AnalyzeButtonPushed());
+            app.ClearButton   = createButton(app, app.ControlPanel,'Clear',[325 110 130 45],[0.95, 0.20, 0.30], @(btn,event) app.ClearButtonPushed());
+            app.PreviousButton = createButton(app, app.ControlPanel,'<< Previous',[15 50 150 45],app.SCColor, @(btn,event) app.PreviousButtonPushed());
+            app.NextButton = createButton(app, app.ControlPanel,'Next >>',[180 50 130 45],app.SCColor, @(btn,event) app.NextButtonPushed());
+            app.ResetButton = createButton(app, app.ControlPanel,'Reset',[325 50 130 45],app.BGColor, @(btn,event) app.ResetButtonPushed());
             app.ImageCounterLabel = uilabel(app.ControlPanel,'Text','No images loaded','Position',[15 10 200 22]);
 
             % Console Panel
             app.ConsolePanel = uipanel(app.UIFigure,'Title','Console Output','FontWeight','bold', ...
-                                       'Position',[10 10 1180 200],'BackgroundColor', app.BGColor,'ForegroundColor',app.SCColor);
+                                       'Position',[10 10 1180 200],'BackgroundColor', app.BGColor);
             app.ConsoleTextArea = uitextarea(app.ConsolePanel,'Position',[10 10 1160 165], ...
                                              'BackgroundColor', app.BGColor,'FontColor',app.SCColor, ...
                                              'FontName','Courier New','Editable','off','Value',{'>> System initialized. Ready...'});
@@ -379,7 +386,7 @@ classdef RubberGloveDDSystem < matlab.apps.AppBase
 
     %% App Creation / Deletion
     methods (Access = public)
-        function app = RubberGloveDDSystem
+        function app = GloveDefectDetectionAppG4
             app.createComponents();
         end
 
