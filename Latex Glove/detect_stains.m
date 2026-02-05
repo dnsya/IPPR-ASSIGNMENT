@@ -7,7 +7,7 @@ function [stainMask, stainStats, numStains] = detect_stains(I, gloveMask)
 %   I         - RGB image
 %   gloveMask - binary mask of glove region
 
-    %% STEP 1: Preprocessing (MORE STABLE)
+    %% STEP 1: Preprocessing 
     I = im2double(I);
     Igray = rgb2gray(I);
 

@@ -4,92 +4,80 @@ function [holeMask, holeStats, numHoles] = detect_holes(I, gloveMask)
 % Input:
 %   I - RGB image of the glove
 %   gloveMask - Binary mask of the glove region
-
     % Convert to double
-    I = im2double(I);
+    Iproc = im2double(I);
     
     % Extract channels
-    gray = rgb2gray(I);
-    hsv = rgb2hsv(I);
+    gray = rgb2gray(Iproc);
+    hsv = rgb2hsv(Iproc);
+    H = hsv(:, :, 1);  % Hue
     V = hsv(:,:,3);  % Value channel
     S = hsv(:,:,2);  % Saturation channel
-    
-    % --- Step 1: Analyze normal glove pixels ---
-    gloveGray = gray(gloveMask);
-    gloveV = V(gloveMask);
-    gloveS = S(gloveMask);
-    
-    meanGray = mean(gloveGray);
-    stdGray = std(gloveGray);
-    
-    meanV = mean(gloveV);
-    stdV = std(gloveV);
-    
-    meanS = mean(gloveS);
 
-% Method:
-%   Holes appear as very dark regions (background showing through)
-%   or regions with significantly different color from the glove.
-%   Uses intensity thresholding and color deviation analysis.
+    rawMask = (H > 0.49 & H < 0.7) & (S > 0.4);
+
+    % close wrinkles
+    rawMask = imclose(rawMask, strel("disk",8));   
+    % remove thin noise
+    rawMask = imopen(rawMask, strel("disk",3));    
+    % remove noise
+    rawMask = bwareaopen(rawMask, 3000); 
+
+    unfilledMask = rawMask;
     
-    % --- Step 2: Detect dark regions ---
-    % Holes are typically much darker than the glove
-    darkThreshold = meanGray - 2.0 * stdGray;
-    veryDark = (gray < darkThreshold) & gloveMask;
+    filledMask  = imfill(rawMask, 'holes');
     
-    % Also check value channel
-    vDarkThreshold = meanV - 2.5 * stdV;
-    veryDarkV = (V < vDarkThreshold) & gloveMask;
+    holeMask = gloveMask & filledMask & ~unfilledMask;
     
-    % --- Step 3: Detect regions with low saturation ---
-    % Holes often show grayish background
-    lowSat = (S < (meanS - 0.25)) & gloveMask;
+    holeMask = bwareaopen(holeMask, 50);
     
-    % --- Step 4: Edge-based detection ---
-    % Holes have strong edges around them
-    edges = edge(gray, 'Canny', [0.05, 0.15]);
-    edgesDilated = imdilate(edges, strel('disk', 2));
     
-    % --- Step 5: Combine detection methods ---
-    holeCandidates = (veryDark | veryDarkV | (lowSat & veryDark)) & edgesDilated & gloveMask;
-    
-    % --- Step 6: Morphological cleanup ---
-    holeMask = imopen(holeCandidates, strel('disk', 2));
-    holeMask = imclose(holeMask, strel('disk', 3));
-    holeMask = bwareaopen(holeMask, 40);  % Remove very small regions
-    
-    % --- Step 7: Filter by geometric properties ---
+    % --- Step 2
+    % Holes are enclosed voids inside the glove region
+
+    % Analyze hole properties
     CC = bwconncomp(holeMask);
-    stats = regionprops(CC, 'Area', 'BoundingBox', 'Perimeter', ...
-                        'Eccentricity', 'Centroid', 'Solidity');
+    stats = regionprops(CC, ...
+    'Area', 'Centroid', 'BoundingBox', 'Eccentricity');
+
     
-    valid = false(1, numel(stats));
-    for i = 1:numel(stats)
-        A = stats(i).Area;
-        P = stats(i).Perimeter;
+    if ~isempty(stats)
+        validHoles = ([stats.Area] > 50) & ([stats.Area] < 5000);
         
-        % Calculate circularity
-        if P > 0
-            circularity = 4 * pi * A / (P^2);
-        else
-            circularity = 0;
-        end
+        % Count valid holes
+        numHoles = sum(validHoles);
+        fprintf('Number of holes detected: %d\n', numHoles);
         
-        % Holes are typically:
-        % - Compact (circular-ish)
-        % - Reasonable size (40-5000 pixels)
-        % - Solid (not too irregular)
-        if A >= 40 && A <= 5000 && ...
-           circularity > 0.2 && ...
-           stats(i).Solidity > 0.4
-            valid(i) = true;
+        % Display hole information
+        for i = 1:length(stats)
+            if validHoles(i)
+                fprintf('Hole %d: Area = %.0f pixels, Centroid = (%.1f, %.1f)\n', ...
+                        i, stats(i).Area, stats(i).Centroid(1), stats(i).Centroid(2));
+            end
         end
+    else
+        numHoles = 0;
+        fprintf('No holes detected.\n');
     end
     
+    if numHoles > 0
+        hold on;
+        for i = 1:length(stats)
+            if validHoles(i)
+                plot(stats(i).Centroid(1), stats(i).Centroid(2), ...
+                     'r+', 'MarkerSize', 15, 'LineWidth', 2);
+                text(stats(i).Centroid(1) + 20, stats(i).Centroid(2), ...
+                     sprintf('H%d', i), 'Color', 'red', 'FontWeight', 'bold');
+            end
+        end
+        hold off;
+    end
+    
+
     % --- Step 8: Generate final outputs ---
-    holeMask = ismember(labelmatrix(CC), find(valid));
-    holeStats = stats(valid);
-    numHoles = nnz(valid);
+    holeMask = ismember(labelmatrix(CC), find(validHoles));
+    holeStats = stats(validHoles);
+    numHoles = nnz(validHoles);
     
 % Output:
 %   holeMask - Binary mask of detected holes
@@ -103,4 +91,5 @@ function [holeMask, holeStats, numHoles] = detect_holes(I, gloveMask)
         fprintf('  - Average hole size: %.1f pixels\n', mean(areas));
         fprintf('  - Size range: %.0f - %.0f pixels\n', min(areas), max(areas));
     end
+
 end

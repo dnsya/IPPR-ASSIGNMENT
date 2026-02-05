@@ -2,7 +2,7 @@ function glove_defect_detection_gui
 % GLOVE_DEFECT_DETECTION_GUI Main GUI for glove defect detection system
 %
 % - Import glove images
-% - Detect multiple types of defects: tears/holes (body), fingertip holes, stains
+% - Detect multiple types of defects: holes (body), fingertip holes, stains
 % - Visualize detection results
 % - View detection statistics
 
@@ -63,7 +63,7 @@ function glove_defect_detection_gui
     
     % Individual detection buttons
     btnDetectHoles = uicontrol('Style', 'pushbutton', ...
-                               'String', 'Detect Tears/Holes', ...
+                               'String', 'Detect Holes', ...
                                'Position', [930 400 220 40], ...
                                'FontSize', 11, ...
                                'BackgroundColor', [0.9 0.5 0.5], ...
@@ -179,14 +179,14 @@ function glove_defect_detection_gui
         imshow(I);
         hold on;
         
-        % Draw tears/holes (red)
+        % Draw holes (red)
         for i = 1:length(holeStats)
             rectangle('Position', holeStats(i).BoundingBox, ...
                       'EdgeColor', 'r', 'LineWidth', 2);
             plot(holeStats(i).Centroid(1), holeStats(i).Centroid(2), ...
                  'r+', 'MarkerSize', 12, 'LineWidth', 2);
             text(holeStats(i).BoundingBox(1), holeStats(i).BoundingBox(2)-10, ...
-                 'TEAR', 'Color', 'r', 'FontSize', 9, 'FontWeight', 'bold', ...
+                 'HOLE', 'Color', 'r', 'FontSize', 9, 'FontWeight', 'bold', ...
                  'BackgroundColor', 'white');
         end
         
@@ -238,14 +238,14 @@ function glove_defect_detection_gui
             sprintf('Total Defects Found: %d', totalDefects);
             '';
             'Breakdown:';
-            sprintf('  • Tears/Holes: %d', numHoles);
+            sprintf('  • Holes: %d', numHoles);
             sprintf('  • Surface Contamination: %d', numContam);
             sprintf('  • Stains: %d', numStains);
             '';
             sprintf('Status: %s', getQualityStatus(totalDefects));
             '';
             'Legend:';
-            '  Red = Tears/Holes';
+            '  Red = Holes';
             '  Blue = Contamination';
             '  Yellow = Stains'
         };
@@ -266,9 +266,9 @@ function glove_defect_detection_gui
         
         [holeMask, holeStats, numHoles] = detect_holes(I, gloveMask);
         
-        displaySingleDefect(I, holeStats, 'TEAR', 'r', 'Tears/Holes Detected');
+        displaySingleDefect(I, holeStats, 'HOLE', 'r', 'Holes Detected');
         
-        set(txtResults, 'String', sprintf('Tear/Hole Detection:\n%d tear(s)/hole(s) found in glove body.', numHoles));
+        set(txtResults, 'String', sprintf('Hole Detection:\n%d hole(s) found in glove body.', numHoles));
     end
     
     function detectStainOnly(~, ~)
@@ -313,23 +313,14 @@ function glove_defect_detection_gui
         for i = 1:length(contamStats)
             % Draw bounding box
             rectangle('Position', contamStats(i).BoundingBox, ...
-                      'EdgeColor', [1 0 0], 'LineWidth', 3);
-            
-            % Draw large X marker 
-            bbox = contamStats(i).BoundingBox;
-            x1 = bbox(1);
-            y1 = bbox(2);
-            x2 = bbox(1) + bbox(3);
-            y2 = bbox(2) + bbox(4);
-            
-            % Draw diagonal cross 
-            plot([x1 x2], [y1 y2], 'r-', 'LineWidth', 3);
-            plot([x2 x1], [y1 y2], 'r-', 'LineWidth', 3);
+                       'EdgeColor', [1 0 0], 'LineWidth', 1, 'LineStyle', '--');
+      
             
             % Label
-            text(bbox(1), bbox(2)-10, 'CONTAMINATION', ...
-                'Color', 'r', 'FontSize', 10, 'FontWeight', 'bold', ...
-                'BackgroundColor', 'white');
+            text(contamStats(i).BoundingBox(1), ...
+                 contamStats(i).BoundingBox(2)-12, ...
+                 'SURFACE CONTAMINATION', ...
+                 'Color', 'r', 'FontSize', 10, 'FontWeight', 'bold');
         end
     
         hold off;
