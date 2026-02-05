@@ -24,6 +24,7 @@ classdef RubberGloveDDSystem < matlab.apps.AppBase
         ConsoleTextArea
         TitlePanel
         TitleLabel
+        BackButton
     end
 
     properties (Access = private)
@@ -33,6 +34,10 @@ classdef RubberGloveDDSystem < matlab.apps.AppBase
         GalleryButtons = {}    % Gallery thumbnail panels
         BGColor = [0.15, 0.15, 0.15]; % dark
         SCColor = [0.95, 0.85, 0.10];
+    end
+    
+    properties (Access = public)
+        ReturnToMenuCallback = [];  % Function handle to return to main menu
     end
 
     %% Private Methods
@@ -104,55 +109,88 @@ classdef RubberGloveDDSystem < matlab.apps.AppBase
 
         %% UI Creation
         function createComponents(app)
+            % Get screen resolution and calculate scaling
+            screenSize = get(0, 'ScreenSize');
+            screenHeight = screenSize(4);
+            
+            % Base design is for 1080p
+            if screenHeight <= 768  % 720p or lower
+                scaleFactor = 0.65;
+            elseif screenHeight <= 1080  % 1080p
+                scaleFactor = 0.85;
+            else  % 1440p, 4K, etc.
+                scaleFactor = 1.0;
+            end
+            
+            % Scaled dimensions
+            baseWidth = 1320;
+            baseHeight = 940;
+            figWidth = round(baseWidth * scaleFactor);
+            figHeight = round(baseHeight * scaleFactor);
+            
+            % Center the window
+            figX = round((screenSize(3) - figWidth) / 2);
+            figY = round((screenSize(4) - figHeight) / 2);
+            
             % UIFigure
-            app.UIFigure = uifigure('Visible','off','Position',[10 10 1320 940], ...
+            app.UIFigure = uifigure('Visible','off','Position',[figX figY figWidth figHeight], ...
                                     'Name','Glove Defect Detection System', ...
                                     'Color', app.BGColor, 'AutoResizeChildren','off', ...
-                                    'Scrollable','off','WindowState','normal');
+                                    'Scrollable','off','WindowState','normal','Resize','off');
 
             % Title Panel
-            app.TitlePanel = uipanel(app.UIFigure,'Position',[10 800 1180 50], ...
+            app.TitlePanel = uipanel(app.UIFigure,'Position',[10*scaleFactor 800*scaleFactor 1180*scaleFactor 50*scaleFactor], ...
                                      'BackgroundColor',app.SCColor,'BorderType','line');
             app.TitleLabel = uilabel(app.TitlePanel,'Text','Rubber Glove Defect Detection System', ...
-                                     'Position',[0 0 1180 50],'HorizontalAlignment','center', ...
-                                     'FontSize',26,'FontWeight','bold','FontColor',[0 0 0]);
+                                     'Position',[0 0 1180*scaleFactor 50*scaleFactor],'HorizontalAlignment','center', ...
+                                     'FontSize',round(26*scaleFactor),'FontWeight','bold','FontColor',[0 0 0]);
+            
+            % Back Button (Industrial style)
+            app.BackButton = uibutton(app.TitlePanel, 'push');
+            app.BackButton.Text = '◄ BACK';
+            app.BackButton.Position = [15*scaleFactor 10*scaleFactor 100*scaleFactor 30*scaleFactor];
+            app.BackButton.FontWeight = 'bold';
+            app.BackButton.FontSize = round(12*scaleFactor);
+            app.BackButton.BackgroundColor = [0.15, 0.15, 0.15];
+            app.BackButton.FontColor = app.SCColor;
+            app.BackButton.ButtonPushedFcn = @(btn,event) app.BackButtonPushed();
 
             % Image Panel
             app.ImagePanel = uipanel(app.UIFigure,'Title','Image Display & Detection Results', ...
-                                     'FontWeight','bold','Position',[10 220 450 570], ...
+                                     'FontWeight','bold','Position',[10*scaleFactor 220*scaleFactor 450*scaleFactor 570*scaleFactor], ...
                                      'BackgroundColor', app.BGColor);
-            app.ImageAxes = uiaxes(app.ImagePanel,'Position',[10 10 430 530], ...
+            app.ImageAxes = uiaxes(app.ImagePanel,'Position',[10*scaleFactor 10*scaleFactor 430*scaleFactor 530*scaleFactor], ...
                                    'XTick',[],'YTick',[],'Box','on','DataAspectRatio',[1 1 1]);
             app.showPlaceholder();
 
             % Gallery Panel
             app.GalleryPanel = uipanel(app.UIFigure,'Title','Image Gallery','FontWeight','bold', ...
-                                       'Position',[470 430 720 360],'Scrollable','on','BackgroundColor', app.BGColor);
-            app.GalleryScrollPanel = uipanel(app.GalleryPanel,'Position',[10 10 700 320], ...
+                                       'Position',[470*scaleFactor 430*scaleFactor 720*scaleFactor 360*scaleFactor],'Scrollable','on','BackgroundColor', app.BGColor);
+            app.GalleryScrollPanel = uipanel(app.GalleryPanel,'Position',[10*scaleFactor 10*scaleFactor 700*scaleFactor 320*scaleFactor], ...
                                              'Scrollable','on','BorderType','none','BackgroundColor', app.BGColor);
 
             % Defect Panel
             app.DefectPanel = uipanel(app.UIFigure,'Title','Defect Selection','FontWeight','bold', ...
-                                      'Position',[470 220 240 200],'BackgroundColor', app.BGColor);
-            app.DefectType1CheckBox = createCheckBox(app, app.DefectPanel, 'Sticky/Fused Fingers',[20 130 150 22],1);
-            app.DefectType2CheckBox = createCheckBox(app, app.DefectPanel, 'Burn Marks',[20 90 150 22],1);
-            app.DefectType3CheckBox = createCheckBox(app, app.DefectPanel, 'Holes',[20 50 150 22],1);
+                                      'Position',[470*scaleFactor 220*scaleFactor 240*scaleFactor 200*scaleFactor],'BackgroundColor', app.BGColor);
+            app.DefectType1CheckBox = createCheckBox(app, app.DefectPanel, 'Sticky/Fused Fingers',[20*scaleFactor 130*scaleFactor 150*scaleFactor 22*scaleFactor],1);
+            app.DefectType2CheckBox = createCheckBox(app, app.DefectPanel, 'Burn Marks',[20*scaleFactor 90*scaleFactor 150*scaleFactor 22*scaleFactor],1);
+            app.DefectType3CheckBox = createCheckBox(app, app.DefectPanel, 'Holes',[20*scaleFactor 50*scaleFactor 150*scaleFactor 22*scaleFactor],1);
 
             % Control Panel
             app.ControlPanel = uipanel(app.UIFigure,'Title','Controls','FontWeight','bold', ...
-                                       'Position',[720 220 470 200],'BackgroundColor', app.BGColor);
-            app.ImportButton = createButton(app, app.ControlPanel,'Import Images',[15 110 150 45],[0.00, 0.75, 0.90], @(btn,event) app.ImportButtonPushed());
-            app.AnalyzeButton = createButton(app, app.ControlPanel,'Analyze',[180 110 130 45],[0.70, 0.95, 0.00], @(btn,event) app.AnalyzeButtonPushed());
-            app.ClearButton   = createButton(app, app.ControlPanel,'Clear',[325 110 130 45],[0.95, 0.20, 0.30], @(btn,event) app.ClearButtonPushed());
-            app.PreviousButton = createButton(app, app.ControlPanel,'<< Previous',[15 50 150 45],app.SCColor, @(btn,event) app.PreviousButtonPushed());
-            app.NextButton = createButton(app, app.ControlPanel,'Next >>',[180 50 130 45],app.SCColor, @(btn,event) app.NextButtonPushed());
-            app.ResetButton = createButton(app, app.ControlPanel,'Reset',[325 50 130 45],app.BGColor, @(btn,event) app.ResetButtonPushed());
-            app.ImageCounterLabel = uilabel(app.ControlPanel,'Text','No images loaded','Position',[15 10 200 22]);
+                                       'Position',[720*scaleFactor 220*scaleFactor 470*scaleFactor 200*scaleFactor],'BackgroundColor', app.BGColor);
+            app.ImportButton = createButton(app, app.ControlPanel,'Import Images',[15*scaleFactor 110*scaleFactor 150*scaleFactor 45*scaleFactor],[0.00, 0.75, 0.90], @(btn,event) app.ImportButtonPushed());
+            app.AnalyzeButton = createButton(app, app.ControlPanel,'Analyze',[180*scaleFactor 110*scaleFactor 130*scaleFactor 45*scaleFactor],[0.70, 0.95, 0.00], @(btn,event) app.AnalyzeButtonPushed());
+            app.ClearButton   = createButton(app, app.ControlPanel,'Clear',[325*scaleFactor 110*scaleFactor 130*scaleFactor 45*scaleFactor],[0.95, 0.20, 0.30], @(btn,event) app.ClearButtonPushed());
+            app.PreviousButton = createButton(app, app.ControlPanel,'<< Previous',[15*scaleFactor 50*scaleFactor 150*scaleFactor 45*scaleFactor],app.SCColor, @(btn,event) app.PreviousButtonPushed());
+            app.NextButton = createButton(app, app.ControlPanel,'Next >>',[180*scaleFactor 50*scaleFactor 130*scaleFactor 45*scaleFactor],app.SCColor, @(btn,event) app.NextButtonPushed());
+            app.ResetButton = createButton(app, app.ControlPanel,'Reset',[325*scaleFactor 50*scaleFactor 130*scaleFactor 45*scaleFactor],app.BGColor, @(btn,event) app.ResetButtonPushed());
+            app.ImageCounterLabel = uilabel(app.ControlPanel,'Text','No images loaded','Position',[15*scaleFactor 10*scaleFactor 200*scaleFactor 22*scaleFactor]);
 
             % Console Panel
             app.ConsolePanel = uipanel(app.UIFigure,'Title','Console Output','FontWeight','bold', ...
-                                       'Position',[10 10 1180 200],'BackgroundColor', app.BGColor);
-            app.ConsoleTextArea = uitextarea(app.ConsolePanel,'Position',[10 10 1160 165], ...
+                                       'Position',[10*scaleFactor 10*scaleFactor 1180*scaleFactor 200*scaleFactor],'BackgroundColor', app.BGColor);
+            app.ConsoleTextArea = uitextarea(app.ConsolePanel,'Position',[10*scaleFactor 10*scaleFactor 1160*scaleFactor 165*scaleFactor], ...
                                              'BackgroundColor', app.BGColor,'FontColor',app.SCColor, ...
                                              'FontName','Courier New','Editable','off','Value',{'>> System initialized. Ready...'});
 
@@ -372,6 +410,18 @@ classdef RubberGloveDDSystem < matlab.apps.AppBase
             app.ImageCounterLabel.Text='No images loaded';
             app.ConsoleTextArea.Value={'> System reset. Ready...'};
             app.updateButtonStates();
+        end
+
+        function BackButtonPushed(app)
+            % Close this app and return to main menu
+            app.addConsoleMessage('> Returning to main menu...');
+            
+            % If a callback is set, call it before closing
+            if ~isempty(app.ReturnToMenuCallback) && isa(app.ReturnToMenuCallback, 'function_handle')
+                app.ReturnToMenuCallback();
+            end
+            
+            delete(app);
         end
 
         function updateButtonStates(app)
