@@ -1,14 +1,8 @@
 function [resultImg, numCuts, cutPercentage, processingTime] = CottonCuffCuts(img)
-    % CottonCuffCuts - Detects cuff cuts (missing/concave regions on the cuff edge)
-    % Outputs:
-    %   resultImg        - Image with detected cuts boxed
-    %   numCuts          - Number of cuts detected
-    %   cutPercentage    - (cut pixels / cuff pixels) * 100
-    %   processingTime   - processing time (seconds)
 
     tic;
 
-    % --- STEP 1: Ensure RGB + grayscale ---
+    % STEP 1: Ensure RGB and grayscale
     if size(img,3) == 1
         rgbImg = cat(3, img, img, img);
     else
@@ -19,15 +13,15 @@ function [resultImg, numCuts, cutPercentage, processingTime] = CottonCuffCuts(im
 
     [rows, cols] = size(grayImg);
 
-    % --- STEP 2: Glove segmentation (bright glove on darker background) ---
-    % Otsu + slight bias to include glove completely
+    % STEP 2: Glove segmentation
+    % Otsu and slight bias to include glove completely
     t = graythresh(grayImg);
     gloveMask = grayImg > max(0.35, 0.90 * t);
 
     gloveMask = imfill(gloveMask, 'holes');
     gloveMask = bwareaopen(gloveMask, 2000);
     gloveMask = imclose(gloveMask, strel('disk', 10));
-    gloveMask = bwareafilt(gloveMask, 1);  % keep largest object only
+    gloveMask = bwareafilt(gloveMask, 1);  
 
     if ~any(gloveMask(:))
         resultImg = rgbImg;
@@ -37,8 +31,8 @@ function [resultImg, numCuts, cutPercentage, processingTime] = CottonCuffCuts(im
         return;
     end
 
-    % --- STEP 3: Cuff ROI (bottom portion) ---
-    cuffStartRow = round(rows * 0.55); % adjust 0.55~0.70 if needed
+    % STEP 3: Cuff ROI (bottom area)
+    cuffStartRow = round(rows * 0.55); 
     cuffROI = false(rows, cols);
     cuffROI(cuffStartRow:end, :) = true;
 
@@ -48,8 +42,7 @@ function [resultImg, numCuts, cutPercentage, processingTime] = CottonCuffCuts(im
     cuffRows = find(any(cuffMask, 2));
     cuffBottomRow = max(cuffRows);   % bottom edge of glove within cuff ROI
 
-    % --- STEP 4: Convex hull trick (fills concavities like the cut) ---
-    % Hull mask covers the cuff as if it had no inward "bite"
+    % STEP 4: Convex hull trick (fills cut area)
     hullMask = bwconvhull(cuffMask, 'objects');
 
     % Candidate cut area = hull - actual cuff
@@ -63,15 +56,14 @@ function [resultImg, numCuts, cutPercentage, processingTime] = CottonCuffCuts(im
     cutCand = imclose(cutCand, strel('disk', 6));
     cutCand = bwareaopen(cutCand, 400);   % remove tiny noise
 
-    % --- STEP 5: Component filtering (cuts are usually "chunky", not thin lines) ---
+    % STEP 5: Component filtering
     cc = bwconncomp(cutCand);
     stats = regionprops(cc, 'Area', 'BoundingBox');
 
     valid = false(cc.NumObjects, 1);
 
-    % These ranges work well for your cuff images; adjust if needed
-    minArea = 800;        % too small = fray/texture
-    maxArea = 80000;      % too big = entire hull fill if segmentation fails
+    minArea = 800;       
+    maxArea = 80000;      
     
     bottomTol = 12;
 
@@ -94,6 +86,7 @@ function [resultImg, numCuts, cutPercentage, processingTime] = CottonCuffCuts(im
         valid(:) = false;
         valid(keep) = true;
     end
+    
     % Build final cut mask
     finalMask = false(rows, cols);
     for k = 1:cc.NumObjects
@@ -104,12 +97,12 @@ function [resultImg, numCuts, cutPercentage, processingTime] = CottonCuffCuts(im
 
     numCuts = nnz(valid);
 
-    % --- STEP 6: Percentage (relative to cuff area, not whole image) ---
+    % STEP 6: Percentage of cuff area
     cutPixels  = nnz(finalMask);
     cuffPixels = nnz(cuffMask);
     cutPercentage = (cutPixels / max(cuffPixels,1)) * 100;
 
-    % --- STEP 7: Draw results (red boxes) ---
+    % STEP 7: Display results in red boxes
     resultImg = im2uint8(rgbImg);
 
     cc2 = bwconncomp(finalMask);
