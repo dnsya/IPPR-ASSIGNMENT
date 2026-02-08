@@ -1,16 +1,16 @@
 function CottonGloveDefectDetectionGUI
     % Create main figure
     % Modern dark theme
-    theme.bg      = [0.07 0.07 0.08];   % main background
-    theme.panel   = [0.12 0.12 0.13];   % panels / cards
-    theme.field   = [0.15 0.15 0.16];   % info fields
-    theme.fg      = [0.92 0.92 0.92];   % primary text
-    theme.muted   = [0.70 0.70 0.70];   % secondary text
-    theme.accent  = [0.20 0.60 1.00];   % accent blue
-    theme.good    = [0.20 0.90 0.40];   % green
-    theme.warn    = [1.00 0.70 0.20];   % amber
-    theme.bad     = [1.00 0.35 0.35];   % red
-    theme.font    = 'Segoe UI';         % modern UI font
+    theme.bg      = [0.07 0.07 0.08];   
+    theme.panel   = [0.12 0.12 0.13];   
+    theme.field   = [0.15 0.15 0.16];   
+    theme.fg      = [0.92 0.92 0.92];   
+    theme.muted   = [0.70 0.70 0.70];   
+    theme.accent  = [0.20 0.60 1.00];   
+    theme.good    = [0.20 0.90 0.40];   
+    theme.warn    = [1.00 0.70 0.20];   
+    theme.bad     = [1.00 0.35 0.35];   
+    theme.font    = 'Segoe UI';         
 
     fig = figure('Name', 'Glove Defect Detection System', ...
                  'Position', [100, 100, 1000, 650], ...
@@ -20,7 +20,7 @@ function CottonGloveDefectDetectionGUI
                  'Color', theme.bg);
     movegui(fig, 'center');
     
-    % Apply global defaults for a consistent modern dark UI
+    % Apply global defaults for a consistent UI design
     set(fig, 'DefaultUicontrolFontName', theme.font, ...
              'DefaultUicontrolFontSize', 11, ...
              'DefaultUicontrolForegroundColor', theme.fg, ...
