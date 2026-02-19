@@ -1,30 +1,4 @@
 function [burnBoxes, holeBoxes, numBurns, numHoles] = detect_BurnsAndHoles(img, detectBurns, detectHoles)
-% DETECT_BURNSANDHOLES Detects and classifies burn marks and holes in glove images
-%
-% Syntax:
-%   [burnBoxes, holeBoxes, numBurns, numHoles] = detect_BurnsAndHoles(img, detectBurns, detectHoles)
-%
-% Inputs:
-%   img - RGB image of the glove
-%   detectBurns - Boolean flag to detect burn marks
-%   detectHoles - Boolean flag to detect holes
-%
-% Outputs:
-%   burnBoxes - Nx4 matrix of burn bounding boxes [x, y, width, height]
-%   holeBoxes - Nx4 matrix of hole bounding boxes [x, y, width, height]
-%   numBurns - Number of burn marks detected
-%   numHoles - Number of holes detected
-%
-% Algorithm:
-%   1. Creates glove mask and identifies dark candidate regions
-%   2. Extracts color (HSV), shape, and texture features for each region
-%   3. Uses scoring system to classify regions as burns or holes
-%   4. Returns appropriate detections based on user flags
-%
-% Classification Features:
-%   BURNS: Low saturation, dark value, irregular shape, rough texture, larger
-%   HOLES: High saturation, reddish, circular shape, sharp edges, smaller
-
     % Detection parameters
     PARAMS = struct();
     
@@ -70,9 +44,8 @@ function [burnBoxes, holeBoxes, numBurns, numHoles] = detect_BurnsAndHoles(img, 
     filledMask = bwareafilt(filledMask, 1);
     
     % Dark candidate mask
-    grayGlove = rgb2gray(img);
-    grayGlove(~filledMask) = 255;
-    invGray = imcomplement(grayGlove);
+    grayImg(~filledMask) = 255;
+    invGray = imcomplement(grayImg);
     invGray = imadjust(invGray, [0.55 0.8], [0 1]);
     candidateMask = invGray > 0.5;
     candidateMask = imopen(candidateMask, strel('disk', 3));
@@ -80,10 +53,9 @@ function [burnBoxes, holeBoxes, numBurns, numHoles] = detect_BurnsAndHoles(img, 
     candidateMask = imfill(candidateMask, 'holes');
     candidateMask = bwareaopen(candidateMask, 200);
 
-    % --- Remove thin shadow-like regions (thickness filtering) ---
+    % Remove thin shadow-like regions
     distMap = bwdist(~candidateMask);
-    thicknessMap = distMap * 2;   % approximate local thickness
-    
+    thicknessMap = distMap * 2;
     minThickness = 8;
     candidateMask(thicknessMap < minThickness) = 0;
     candidateMask = bwareaopen(candidateMask, 350);
@@ -97,7 +69,7 @@ function [burnBoxes, holeBoxes, numBurns, numHoles] = detect_BurnsAndHoles(img, 
     S = hsvImg(:,:,2);
     V = hsvImg(:,:,3);
     
-    grayNorm = uint8(255 * mat2gray(grayGlove));
+    grayNorm = uint8(255 * mat2gray(grayImg));
     
     props = regionprops(candidateMask, 'BoundingBox', 'PixelIdxList', 'Area', ...
         'Solidity', 'Eccentricity', 'Perimeter', 'Circularity');
@@ -107,7 +79,7 @@ function [burnBoxes, holeBoxes, numBurns, numHoles] = detect_BurnsAndHoles(img, 
     
     % Classification
     for k = 1:length(props)
-        % --- Reject crease / line-like shadows ---
+        % Reject line-like regions
         bb = props(k).BoundingBox;
         aspectRatio = max(bb(3), bb(4)) / min(bb(3), bb(4));
         

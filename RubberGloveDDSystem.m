@@ -113,13 +113,14 @@ classdef RubberGloveDDSystem < matlab.apps.AppBase
             screenSize = get(0, 'ScreenSize');
             screenHeight = screenSize(4);
             
-            % Base design is for 1080p
-            if screenHeight <= 768  % 720p or lower
-                scaleFactor = 0.65;
-            elseif screenHeight <= 1080  % 1080p
-                scaleFactor = 0.85;
-            else  % 1440p, 4K, etc.
+            if screenHeight <= 768
+                scaleFactor = 0.5;
+            elseif screenHeight <= 1080
+                scaleFactor = 0.75;
+            elseif screenHeight <= 1440
                 scaleFactor = 1.0;
+            else
+                scaleFactor = 1.2;
             end
             
             % Scaled dimensions
@@ -145,7 +146,7 @@ classdef RubberGloveDDSystem < matlab.apps.AppBase
                                      'Position',[0 0 1180*scaleFactor 50*scaleFactor],'HorizontalAlignment','center', ...
                                      'FontSize',round(26*scaleFactor),'FontWeight','bold','FontColor',[0 0 0]);
             
-            % Back Button (Industrial style)
+            % Back Button
             app.BackButton = uibutton(app.TitlePanel, 'push');
             app.BackButton.Text = '◄ BACK';
             app.BackButton.Position = [15*scaleFactor 10*scaleFactor 100*scaleFactor 30*scaleFactor];
@@ -194,7 +195,7 @@ classdef RubberGloveDDSystem < matlab.apps.AppBase
                                              'BackgroundColor', app.BGColor,'FontColor',app.SCColor, ...
                                              'FontName','Courier New','Editable','off','Value',{'>> System initialized. Ready...'});
 
-            % --- Finally update buttons AFTER all components exist ---
+          
             app.updateButtonStates();
 
             % Show figure
@@ -226,20 +227,20 @@ classdef RubberGloveDDSystem < matlab.apps.AppBase
             
             % Create all thumbnails
             for i = 1:numImages
-                % Calculate position (pre-computed)
+                % Calculate position
                 row = floor((i-1) / thumbnailsPerRow);
                 col = mod(i-1, thumbnailsPerRow);
                 xPos = col * (itemWidth + spacing) + spacing;
                 yPos = scrollHeight - (row + 1) * (itemHeight + spacing);
                 
-                % Create container panel (clickable)
+                % Create container panel
                 itemPanel = uipanel(app.GalleryScrollPanel, ...
                     'Position', [xPos yPos itemWidth 110], ...
                     'BorderType', 'none', ...
                     'BackgroundColor', app.BGColor, ...
                     'ButtonDownFcn', @(~,~) app.galleryButtonCallback(i));
                 
-                % Create axes for image (minimal properties)
+                % Create axes for image
                 ax = uiaxes(itemPanel, ...
                     'Position', [5 25 thumbWidth thumbHeight], ...
                     'XTick', [], 'YTick', [], ...
