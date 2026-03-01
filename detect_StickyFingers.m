@@ -1,18 +1,6 @@
 function [fusedBoxes, numFused] = detect_StickyFingers(img)
-    % Resize for processing
-    imgResized = imresize(img, [1920 NaN]);
-    
-    % Pre-processing
-    grayImg = rgb2gray(imgResized);
-    grayImg = imgaussfilt(grayImg, 2);
-    
-    % Binarize and clean
-    level = graythresh(grayImg);
-    bwImg = imbinarize(grayImg, level);
-    bwImg = bwareaopen(bwImg, 2000);
-    bwImg = imclose(bwImg, strel('disk', 3));
-    filledMask = imfill(bwImg, 'holes');
-    filledMask = bwareafilt(filledMask, 1);
+    % Shared preprocessing (resize, scale factor, grayscale, glove mask)
+    [filledMask, scaleFactor, imgResized, ~] = glovePreprocess(img);
     
     % Get glove orientation
     propsFilledMask = regionprops(filledMask, 'Orientation');
@@ -38,11 +26,6 @@ function [fusedBoxes, numFused] = detect_StickyFingers(img)
     fusedBoxes = [];
     
     if ~isempty(props)
-        % Get scale factor for converting back to original image
-        [origH, ~, ~] = size(img);
-        [resizedH, ~, ~] = size(imgResized);
-        scaleFactor = origH / resizedH;
-        
         % Find finger regions orientation and width 
         for k = 1:length(props) 
             orientation = abs(props(k).Orientation); 
