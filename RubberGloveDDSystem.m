@@ -175,7 +175,7 @@ classdef RubberGloveDDSystem < matlab.apps.AppBase
                                       'Position',[470*scaleFactor 220*scaleFactor 240*scaleFactor 200*scaleFactor],'BackgroundColor', app.BGColor);
             app.DefectType1CheckBox = createCheckBox(app, app.DefectPanel, 'Sticky/Fused Fingers',[20*scaleFactor 130*scaleFactor 150*scaleFactor 22*scaleFactor],1);
             app.DefectType2CheckBox = createCheckBox(app, app.DefectPanel, 'Burn Marks',[20*scaleFactor 90*scaleFactor 150*scaleFactor 22*scaleFactor],1);
-            app.DefectType3CheckBox = createCheckBox(app, app.DefectPanel, 'Holes',[20*scaleFactor 50*scaleFactor 150*scaleFactor 22*scaleFactor],1);
+            app.DefectType3CheckBox = createCheckBox(app, app.DefectPanel, 'Stains',[20*scaleFactor 50*scaleFactor 150*scaleFactor 22*scaleFactor],1);
 
             % Control Panel
             app.ControlPanel = uipanel(app.UIFigure,'Title','Controls','FontWeight','bold', ...
@@ -313,7 +313,7 @@ classdef RubberGloveDDSystem < matlab.apps.AppBase
         end
 
         %% Defect Detection
-        function detectDefects(app,detectSticky,detectBurns,detectHoles)
+        function detectDefects(app,detectSticky,detectBurns,detectStains)
             img = app.CurrentImage;
             allBoxes={}; allLabels={}; allColors={}; totalDefects=0;
 
@@ -328,9 +328,9 @@ classdef RubberGloveDDSystem < matlab.apps.AppBase
                     sprintf('> Found %d fused finger region(s)',numFused),'> No fused fingers detected'));
             end
 
-            if detectBurns || detectHoles
+            if detectBurns || detectStains
                 app.addConsoleMessage('> Detecting burn marks and holes...');
-                [burnBoxes,holeBoxes,numBurns,numHoles] = detect_BurnsAndHoles(img,detectBurns,detectHoles);
+                [burnBoxes,stainBoxes,numBurns,numStains] = detect_BurnsAndStains(img,detectBurns,detectStains);
 
                 if detectBurns
                     if numBurns>0, for i=1:size(burnBoxes,1), allBoxes{end+1}=burnBoxes(i,:); allLabels{end+1}='BURN'; allColors{end+1}='r'; end; end
@@ -338,10 +338,10 @@ classdef RubberGloveDDSystem < matlab.apps.AppBase
                     app.addConsoleMessage(app.ternary(numBurns>0,sprintf('> Found %d burn mark(s)',numBurns),'> No burn marks detected'));
                 end
 
-                if detectHoles
-                    if numHoles>0, for i=1:size(holeBoxes,1), allBoxes{end+1}=holeBoxes(i,:); allLabels{end+1}='HOLE'; allColors{end+1}='b'; end; end
-                    totalDefects = totalDefects + numHoles;
-                    app.addConsoleMessage(app.ternary(numHoles>0,sprintf('> Found %d hole(s)',numHoles),'> No holes detected'));
+                if detectStains
+                    if numStains>0, for i=1:size(stainBoxes,1), allBoxes{end+1}=stainBoxes(i,:); allLabels{end+1}='STAIN'; allColors{end+1}='b'; end; end
+                    totalDefects = totalDefects + numStains;
+                    app.addConsoleMessage(app.ternary(numStains>0,sprintf('> Found %d Stain(s)',numStains),'> No stains detected'));
                 end
             end
 
