@@ -1,16 +1,15 @@
 function CottonGloveDefectDetectionGUI
-    % Create main figure
     % Modern dark theme
-    theme.bg      = [0.07 0.07 0.08];   
-    theme.panel   = [0.12 0.12 0.13];   
-    theme.field   = [0.15 0.15 0.16];   
-    theme.fg      = [0.92 0.92 0.92];   
-    theme.muted   = [0.70 0.70 0.70];   
-    theme.accent  = [0.20 0.60 1.00];   
-    theme.good    = [0.20 0.90 0.40];   
-    theme.warn    = [1.00 0.70 0.20];   
-    theme.bad     = [1.00 0.35 0.35];   
-    theme.font    = 'Segoe UI';         
+    theme.bg      = [0.07 0.07 0.08];
+    theme.panel   = [0.12 0.12 0.13];
+    theme.field   = [0.15 0.15 0.16];
+    theme.fg      = [0.92 0.92 0.92];
+    theme.muted   = [0.70 0.70 0.70];
+    theme.accent  = [0.20 0.60 1.00];
+    theme.good    = [0.20 0.90 0.40];
+    theme.warn    = [1.00 0.70 0.20];
+    theme.bad     = [1.00 0.35 0.35];
+    theme.font    = 'Segoe UI';
 
     fig = figure('Name', 'Glove Defect Detection System', ...
                  'Position', [100, 100, 1000, 650], ...
@@ -19,18 +18,14 @@ function CottonGloveDefectDetectionGUI
                  'Resize', 'off', ...
                  'Color', theme.bg);
     movegui(fig, 'center');
-    
-    % Apply global defaults for a consistent UI design
+
     set(fig, 'DefaultUicontrolFontName', theme.font, ...
              'DefaultUicontrolFontSize', 11, ...
              'DefaultUicontrolForegroundColor', theme.fg, ...
              'DefaultUicontrolBackgroundColor', theme.bg);
 
-    
-    % Initialize variables
     img = [];
-    
-    % Create UI components
+
     % Title
     uicontrol('Style', 'text', ...
               'String', 'Cotton Glove Defect Detection System', ...
@@ -41,7 +36,7 @@ function CottonGloveDefectDetectionGUI
               'BackgroundColor', theme.bg, ...
               'ForegroundColor', theme.fg, ...
               'FontName', theme.font);
-    
+
     % Load Image Button
     btnLoad = uicontrol('Style', 'pushbutton', ...
                         'String', 'Load Image', ...
@@ -52,23 +47,11 @@ function CottonGloveDefectDetectionGUI
                         'FontWeight', 'bold', ...
                         'FontName', theme.font, ...
                         'Callback', @loadImage);
-    
-    % Detect Loose Yarn Button
-    btnDetectYarn = uicontrol('Style', 'pushbutton', ...
-                          'String', 'Detect Loose Yarn', ...
-                          'Position', [50, 460, 150, 40], ...
-                          'FontSize', 11, ...
-                          'BackgroundColor', [0.2, 0.8, 0.2], ...
-                          'ForegroundColor', [1, 1, 1], ...
-                          'FontWeight', 'bold', ...
-                          'FontName', theme.font, ...
-                          'Enable', 'off', ...
-                          'Callback', @detectLooseYarn);
-    
+
     % Detect Dust Button
     btnDetectDust = uicontrol('Style', 'pushbutton', ...
                           'String', 'Detect Dust', ...
-                          'Position', [50, 400, 150, 40], ...
+                          'Position', [50, 460, 150, 40], ...
                           'FontSize', 11, ...
                           'BackgroundColor', [0.8, 0.4, 0.2], ...
                           'ForegroundColor', [1, 1, 1], ...
@@ -76,7 +59,19 @@ function CottonGloveDefectDetectionGUI
                           'FontName', theme.font, ...
                           'Enable', 'off', ...
                           'Callback', @detectDust);
-    
+
+    % Detect Stain Button
+    btnDetectStain = uicontrol('Style', 'pushbutton', ...
+                          'String', 'Detect Stain', ...
+                          'Position', [50, 400, 150, 40], ...
+                          'FontSize', 11, ...
+                          'BackgroundColor', [0.85, 0.25, 0.85], ...
+                          'ForegroundColor', [1, 1, 1], ...
+                          'FontWeight', 'bold', ...
+                          'FontName', theme.font, ...
+                          'Enable', 'off', ...
+                          'Callback', @detectStain);
+
     % Detect Cuff Cuts Button
     btnDetectCuts = uicontrol('Style', 'pushbutton', ...
                           'String', 'Detect Cuff Cuts', ...
@@ -88,7 +83,7 @@ function CottonGloveDefectDetectionGUI
                           'FontName', theme.font, ...
                           'Enable', 'off', ...
                           'Callback', @detectCuffCuts);
-    
+
     % Detect All Defects Button
     btnDetectAll = uicontrol('Style', 'pushbutton', ...
                           'String', 'Detect All Defects', ...
@@ -100,7 +95,7 @@ function CottonGloveDefectDetectionGUI
                           'FontName', theme.font, ...
                           'Enable', 'off', ...
                           'Callback', @detectAllDefects);
-    
+
     % Reset Button
     btnReset = uicontrol('Style', 'pushbutton', ...
                         'String', 'Reset', ...
@@ -112,7 +107,7 @@ function CottonGloveDefectDetectionGUI
                         'FontName', theme.font, ...
                         'Enable', 'off', ...
                         'Callback', @resetImage);
-    
+
     % Exit Button
     btnExit = uicontrol('Style', 'pushbutton', ...
                         'String', 'Exit', ...
@@ -123,7 +118,7 @@ function CottonGloveDefectDetectionGUI
                         'FontWeight', 'bold', ...
                         'FontName', theme.font, ...
                         'Callback', @exitApp);
-    
+
     % Main Image Display Axes
     axesMain = axes('Parent', fig, ...
                     'Position', [0.25, 0.3, 0.7, 0.55], ...
@@ -132,7 +127,7 @@ function CottonGloveDefectDetectionGUI
                     'XColor', theme.panel, 'YColor', theme.panel, ...
                     'Box', 'on');
     title(axesMain, 'Image Display', 'FontSize', 14, 'FontWeight', 'bold', 'Color', theme.fg);
-    
+
     % Processing Information Panel
     uicontrol('Style', 'text', ...
               'String', 'Processing Information', ...
@@ -143,7 +138,7 @@ function CottonGloveDefectDetectionGUI
               'BackgroundColor', theme.bg, ...
               'ForegroundColor', theme.fg, ...
               'FontName', theme.font);
-    
+
     % Processing Time Display
     txtProcessingTime = uicontrol('Style', 'text', ...
                             'String', 'Processing Time: -- seconds', ...
@@ -153,7 +148,7 @@ function CottonGloveDefectDetectionGUI
                             'ForegroundColor', theme.good, ...
                             'HorizontalAlignment', 'left', ...
                             'FontName', theme.font);
-    
+
     % Detection Type Display
     txtDetectionType = uicontrol('Style', 'text', ...
                             'String', 'Detection Type: None', ...
@@ -163,8 +158,8 @@ function CottonGloveDefectDetectionGUI
                             'ForegroundColor', theme.good, ...
                             'HorizontalAlignment', 'left', ...
                             'FontName', theme.font);
-    
-    % Results Panel
+
+    % Results Panel label
     uicontrol('Style', 'text', ...
               'String', 'Detection Results', ...
               'Position', [250, 110, 200, 20], ...
@@ -174,7 +169,7 @@ function CottonGloveDefectDetectionGUI
               'BackgroundColor', theme.bg, ...
               'ForegroundColor', theme.fg, ...
               'FontName', theme.font);
-    
+
     % Results text box
     txtResults = uicontrol('Style', 'text', ...
                            'String', 'Results will appear here', ...
@@ -184,7 +179,7 @@ function CottonGloveDefectDetectionGUI
                            'ForegroundColor', theme.fg, ...
                            'HorizontalAlignment', 'left', ...
                            'FontName', theme.font);
-    
+
     % Status text
     txtStatus = uicontrol('Style', 'text', ...
                           'String', 'Status: Ready', ...
@@ -194,274 +189,245 @@ function CottonGloveDefectDetectionGUI
                           'BackgroundColor', theme.bg, ...
                           'ForegroundColor', theme.good, ...
                           'FontName', theme.font);
-    
+
+    % ----------------------------------------------------------------
     % Callback Functions
+    % ----------------------------------------------------------------
+
     function loadImage(~, ~)
         [filename, pathname] = uigetfile({'*.jpg;*.png;*.bmp;*.tif;*.jpeg', ...
             'Image Files (*.jpg, *.png, *.bmp, *.tif, *.jpeg)'}, 'Select a glove image');
-        
+
         if filename ~= 0
             img = imread(fullfile(pathname, filename));
             axes(axesMain);
             imshow(img);
             title(axesMain, 'Original Image', 'FontSize', 14, 'FontWeight', 'bold', 'Color', theme.fg);
-            
-            % Reset displays
+
             set(txtProcessingTime, 'String', 'Processing Time: -- seconds', ...
                 'ForegroundColor', [0, 1, 0]);
             set(txtDetectionType, 'String', 'Detection Type: None', ...
                 'ForegroundColor', [0, 1, 0]);
-            
-            % Enable detect buttons
-            set(btnDetectYarn, 'Enable', 'on');
-            set(btnDetectDust, 'Enable', 'on');
-            set(btnDetectCuts, 'Enable', 'on');
-            set(btnDetectAll, 'Enable', 'on');
-            set(btnReset, 'Enable', 'on');
-            
+
+            set(btnDetectDust,  'Enable', 'on');
+            set(btnDetectStain, 'Enable', 'on');
+            set(btnDetectCuts,  'Enable', 'on');
+            set(btnDetectAll,   'Enable', 'on');
+            set(btnReset,       'Enable', 'on');
+
             set(txtStatus, 'String', ['Status: Image loaded - ' filename], ...
                 'ForegroundColor', [0, 0.5, 0]);
             set(txtResults, 'String', 'Image loaded successfully. Select detection method.');
         end
     end
-    
-    % Function to detect loose yarn
-    function detectLooseYarn(~, ~)
-        if isempty(img)
-            set(txtStatus, 'String', 'Status: ERROR - No image loaded', ...
-                'ForegroundColor', [1, 0, 0]);
-            return;
-        end
-        
-        set(txtStatus, 'String', 'Status: Processing - Detecting Loose Yarn...', ...
-            'ForegroundColor', [0, 0, 1]);
-        set(txtProcessingTime, 'String', 'Processing Time: Processing...', ...
-            'ForegroundColor', [1, 1, 0]);
-        set(txtDetectionType, 'String', 'Detection Type: Loose Yarn', ...
-            'ForegroundColor', [1, 1, 0]);
-        pause(0.1);
-        
-        % Call CottonLooseYarn function
-        [resultImg, numLooseYarns, yarnPercentage, processingTime] = CottonLooseYarn(img);
-        
-        % Display result
-        axes(axesMain);
-        imshow(resultImg);
-        title(axesMain, 'Loose Yarn Detection Results', 'FontSize', 14, 'FontWeight', 'bold', 'Color', theme.fg);
-        
-        % Update displays
-        set(txtProcessingTime, 'String', sprintf('Processing Time: %.4f seconds', processingTime), ...
-            'ForegroundColor', [0, 1, 0]);
-        set(txtDetectionType, 'String', 'Detection Type: Loose Yarn', ...
-            'ForegroundColor', [0, 1, 0]);
-        
-        % Generate results
-        if numLooseYarns == 0
-            resultStr = sprintf('✓ No loose yarn detected\n\nStatus: PASS\nQuality: Excellent\n\nProcessing completed in %.3f sec', processingTime);
-            statusColor = [0, 0.6, 0];
-            statusMsg = 'Status: Analysis complete - No loose yarn detected';
-        else
-            resultStr = sprintf('✗ Quality Check FAILED\n\nLoose yarn found: %d\nAffected area: %.2f%%\n\nStatus: REJECT\n\nProcessing completed in %.3f sec', ...
-                numLooseYarns, yarnPercentage, processingTime);
-            statusColor = [1, 0, 0];
-            statusMsg = sprintf('Status: %d loose yarn defect(s) detected - Quality check FAILED', numLooseYarns);
-        end
-        
-        set(txtResults, 'String', resultStr, 'ForegroundColor', statusColor);
-        set(txtStatus, 'String', statusMsg, 'ForegroundColor', statusColor);
-    end
-    
-    % Function to detect dust
+
+    % ---- Detect Dust ------------------------------------------------
     function detectDust(~, ~)
         if isempty(img)
-            set(txtStatus, 'String', 'Status: ERROR - No image loaded', ...
-                'ForegroundColor', [1, 0, 0]);
+            set(txtStatus, 'String', 'Status: ERROR - No image loaded', 'ForegroundColor', [1,0,0]);
             return;
         end
-        
-        set(txtStatus, 'String', 'Status: Processing - Detecting Dust Particles...', ...
-            'ForegroundColor', [0, 0, 1]);
-        set(txtProcessingTime, 'String', 'Processing Time: Processing...', ...
-            'ForegroundColor', [1, 1, 0]);
-        set(txtDetectionType, 'String', 'Detection Type: Dust Particles', ...
-            'ForegroundColor', [1, 1, 0]);
+        set(txtStatus, 'String', 'Status: Processing - Detecting Dust Particles...', 'ForegroundColor', [0,0,1]);
+        set(txtProcessingTime, 'String', 'Processing Time: Processing...', 'ForegroundColor', [1,1,0]);
+        set(txtDetectionType,  'String', 'Detection Type: Dust Particles',  'ForegroundColor', [1,1,0]);
         pause(0.1);
-        
-        % Call CottonDust function
+
         [resultImg, numDustParticles, dustPercentage, processingTime] = CottonDust(img);
-        
-        % Display result
+
         axes(axesMain);
         imshow(resultImg);
         title(axesMain, 'Dust Particle Detection Results', 'FontSize', 14, 'FontWeight', 'bold', 'Color', theme.fg);
-        
-        % Update displays
-        set(txtProcessingTime, 'String', sprintf('Processing Time: %.4f seconds', processingTime), ...
-            'ForegroundColor', [0, 1, 0]);
-        set(txtDetectionType, 'String', 'Detection Type: Dust Particles', ...
-            'ForegroundColor', [0, 1, 0]);
-        
-        % Generate results
+
+        set(txtProcessingTime, 'String', sprintf('Processing Time: %.4f seconds', processingTime), 'ForegroundColor', [0,1,0]);
+        set(txtDetectionType,  'String', 'Detection Type: Dust Particles', 'ForegroundColor', [0,1,0]);
+
         if numDustParticles == 0
-            resultStr = sprintf('✓ No dust particles detected\n\nStatus: PASS\nQuality: Excellent\n\nProcessing completed in %.3f sec', processingTime);
+            resultStr  = sprintf('✓ No dust particles detected\n\nStatus: PASS\nQuality: Excellent\n\nProcessing completed in %.3f sec', processingTime);
             statusColor = [0, 0.6, 0];
-            statusMsg = 'Status: Analysis complete - No dust particles detected';
+            statusMsg  = 'Status: Analysis complete - No dust particles detected';
         else
-            resultStr = sprintf('✗ Quality Check FAILED\n\nDust particles found: %d\nAffected area: %.2f%%\n\nStatus: REJECT\n\nProcessing completed in %.3f sec', ...
+            resultStr  = sprintf('✗ Quality Check FAILED\n\nDust particles found: %d\nAffected area: %.2f%%\n\nStatus: REJECT\n\nProcessing completed in %.3f sec', ...
                 numDustParticles, dustPercentage, processingTime);
             statusColor = [1, 0, 0];
-            statusMsg = sprintf('Status: %d dust particle(s) detected - Quality check FAILED', numDustParticles);
+            statusMsg  = sprintf('Status: %d dust particle(s) detected - Quality check FAILED', numDustParticles);
         end
-        
-        set(txtResults, 'String', resultStr, 'ForegroundColor', statusColor);
-        set(txtStatus, 'String', statusMsg, 'ForegroundColor', statusColor);
+        set(txtResults, 'String', resultStr,  'ForegroundColor', statusColor);
+        set(txtStatus,  'String', statusMsg,  'ForegroundColor', statusColor);
     end
-    
-    % Function to detect cuff cuts
-    function detectCuffCuts(~, ~)
+
+    % ---- Detect Stain -----------------------------------------------
+    function detectStain(~, ~)
         if isempty(img)
-            set(txtStatus, 'String', 'Status: ERROR - No image loaded', ...
-                'ForegroundColor', [1, 0, 0]);
+            set(txtStatus, 'String', 'Status: ERROR - No image loaded', 'ForegroundColor', [1,0,0]);
             return;
         end
-        
-        set(txtStatus, 'String', 'Status: Processing - Detecting Cuff Cuts...', ...
-            'ForegroundColor', [0, 0, 1]);
-        set(txtProcessingTime, 'String', 'Processing Time: Processing...', ...
-            'ForegroundColor', [1, 1, 0]);
-        set(txtDetectionType, 'String', 'Detection Type: Cuff Cuts', ...
-            'ForegroundColor', [1, 1, 0]);
+        set(txtStatus, 'String', 'Status: Processing - Detecting Stain...', 'ForegroundColor', [0,0,1]);
+        set(txtProcessingTime, 'String', 'Processing Time: Processing...', 'ForegroundColor', [1,1,0]);
+        set(txtDetectionType,  'String', 'Detection Type: Stain',           'ForegroundColor', [1,1,0]);
         pause(0.1);
-        
-        % Call CottonCuffCuts function
+
+        [resultImg, numStains, stainPercentage, processingTime] = CottonStain(img);
+
+        axes(axesMain);
+        imshow(resultImg);
+        title(axesMain, 'Stain Detection Results', 'FontSize', 14, 'FontWeight', 'bold', 'Color', theme.fg);
+
+        set(txtProcessingTime, 'String', sprintf('Processing Time: %.4f seconds', processingTime), 'ForegroundColor', [0,1,0]);
+        set(txtDetectionType,  'String', 'Detection Type: Stain', 'ForegroundColor', [0,1,0]);
+
+        if numStains == 0
+            resultStr  = sprintf('✓ No stain detected\n\nStatus: PASS\nQuality: Excellent\n\nProcessing completed in %.3f sec', processingTime);
+            statusColor = [0, 0.6, 0];
+            statusMsg  = 'Status: Analysis complete - No stain detected';
+        else
+            resultStr  = sprintf('✗ Quality Check FAILED\n\nStain region(s) found: %d\nAffected area: %.2f%%\n\nStatus: REJECT\n\nProcessing completed in %.3f sec', ...
+                numStains, stainPercentage, processingTime);
+            statusColor = [1, 0, 0];
+            statusMsg  = sprintf('Status: %d stain defect(s) detected - Quality check FAILED', numStains);
+        end
+        set(txtResults, 'String', resultStr,  'ForegroundColor', statusColor);
+        set(txtStatus,  'String', statusMsg,  'ForegroundColor', statusColor);
+    end
+
+    % ---- Detect Cuff Cuts -------------------------------------------
+    function detectCuffCuts(~, ~)
+        if isempty(img)
+            set(txtStatus, 'String', 'Status: ERROR - No image loaded', 'ForegroundColor', [1,0,0]);
+            return;
+        end
+        set(txtStatus, 'String', 'Status: Processing - Detecting Cuff Cuts...', 'ForegroundColor', [0,0,1]);
+        set(txtProcessingTime, 'String', 'Processing Time: Processing...', 'ForegroundColor', [1,1,0]);
+        set(txtDetectionType,  'String', 'Detection Type: Cuff Cuts',       'ForegroundColor', [1,1,0]);
+        pause(0.1);
+
         [resultImg, numCuts, cutPercentage, processingTime] = CottonCuffCuts(img);
-        
-        % Display result
+
         axes(axesMain);
         imshow(resultImg);
         title(axesMain, 'Cuff Cuts Detection Results', 'FontSize', 14, 'FontWeight', 'bold', 'Color', theme.fg);
-        
-        % Update displays
-        set(txtProcessingTime, 'String', sprintf('Processing Time: %.4f seconds', processingTime), ...
-            'ForegroundColor', [0, 1, 0]);
-        set(txtDetectionType, 'String', 'Detection Type: Cuff Cuts', ...
-            'ForegroundColor', [0, 1, 0]);
-        
-        % Generate results
+
+        set(txtProcessingTime, 'String', sprintf('Processing Time: %.4f seconds', processingTime), 'ForegroundColor', [0,1,0]);
+        set(txtDetectionType,  'String', 'Detection Type: Cuff Cuts', 'ForegroundColor', [0,1,0]);
+
         if numCuts == 0
-            resultStr = sprintf('✓ No cuff cuts detected\n\nStatus: PASS\nQuality: Excellent\n\nProcessing completed in %.3f sec', processingTime);
+            resultStr  = sprintf('✓ No cuff cuts detected\n\nStatus: PASS\nQuality: Excellent\n\nProcessing completed in %.3f sec', processingTime);
             statusColor = [0, 0.6, 0];
-            statusMsg = 'Status: Analysis complete - No cuff cuts detected';
+            statusMsg  = 'Status: Analysis complete - No cuff cuts detected';
         else
-            resultStr = sprintf('✗ Quality Check FAILED\n\nCuff cuts found: %d\nAffected area: %.2f%%\n\nStatus: REJECT\n\nProcessing completed in %.3f sec', ...
+            resultStr  = sprintf('✗ Quality Check FAILED\n\nCuff cuts found: %d\nAffected area: %.2f%%\n\nStatus: REJECT\n\nProcessing completed in %.3f sec', ...
                 numCuts, cutPercentage, processingTime);
             statusColor = [1, 0, 0];
-            statusMsg = sprintf('Status: %d cuff cut(s) detected - Quality check FAILED', numCuts);
+            statusMsg  = sprintf('Status: %d cuff cut(s) detected - Quality check FAILED', numCuts);
         end
-        
-        set(txtResults, 'String', resultStr, 'ForegroundColor', statusColor);
-        set(txtStatus, 'String', statusMsg, 'ForegroundColor', statusColor);
+        set(txtResults, 'String', resultStr,  'ForegroundColor', statusColor);
+        set(txtStatus,  'String', statusMsg,  'ForegroundColor', statusColor);
     end
-    
-    % Function to detect all defects
+
+    % ---- Detect All Defects -----------------------------------------
     function detectAllDefects(~, ~)
         if isempty(img)
-            set(txtStatus, 'String', 'Status: ERROR - No image loaded', ...
-                'ForegroundColor', [1, 0, 0]);
+            set(txtStatus, 'String', 'Status: ERROR - No image loaded', 'ForegroundColor', [1,0,0]);
             return;
         end
-        
-        set(txtStatus, 'String', 'Status: Processing - Detecting All Defects...', ...
-            'ForegroundColor', [0, 0, 1]);
-        set(txtProcessingTime, 'String', 'Processing Time: Processing...', ...
-            'ForegroundColor', [1, 1, 0]);
-        set(txtDetectionType, 'String', 'Detection Type: All Defects', ...
-            'ForegroundColor', [1, 1, 0]);
+        set(txtStatus, 'String', 'Status: Processing - Detecting All Defects...', 'ForegroundColor', [0,0,1]);
+        set(txtProcessingTime, 'String', 'Processing Time: Processing...', 'ForegroundColor', [1,1,0]);
+        set(txtDetectionType,  'String', 'Detection Type: All Defects',     'ForegroundColor', [1,1,0]);
         pause(0.1);
-        
+
         startTime = tic;
-        
-        % Call all three detection functions
-        [resultImgYarn, numLooseYarns, yarnPercentage, ~] = CottonLooseYarn(img);
-        [resultImgDust, numDustParticles, dustPercentage, ~] = CottonDust(img);
-        [resultImgCuts, numCuts, cutPercentage, ~] = CottonCuffCuts(img);
-        
-        % Combine all visualizations
+
+        [resultImgDust,  numDustParticles, dustPercentage,  ~] = CottonDust(img);
+        [resultImgStain, numStains,        stainPercentage, ~] = CottonStain(img);
+        [resultImgCuts,  numCuts,          cutPercentage,   ~] = CottonCuffCuts(img);
+
+        % Combine all red-box annotations onto one image
         if size(img, 3) == 3
-            baseImg = img;
+            combinedImg = img;
         else
-            baseImg = cat(3, img, img, img);
+            combinedImg = cat(3, img, img, img);
         end
-        
-        [~, ~, ~] = size(baseImg);
-        combinedImg = baseImg;
-        
-        % Extract red channel from yarn detection (loose yarns marked in red)
-        redMaskYarn = (resultImgYarn(:,:,1) > 200) & (resultImgYarn(:,:,2) < 50);
-        combinedImg(repmat(redMaskYarn, [1, 1, 3])) = resultImgYarn(repmat(redMaskYarn, [1, 1, 3]));
-        
-        % Extract cyan channel from dust detection (dust marked in cyan)
-        cyanMaskDust = (resultImgDust(:,:,2) > 200) & (resultImgDust(:,:,3) > 200);
-        combinedImg(repmat(cyanMaskDust, [1, 1, 3])) = resultImgDust(repmat(cyanMaskDust, [1, 1, 3]));
-        
-        % Extract red channel from cuts detection (cuts marked in red)
+        combinedImg = im2uint8(combinedImg);
+
+        % Overlay dust red boxes
+        redMaskDust = (resultImgDust(:,:,1) > 200) & (resultImgDust(:,:,2) < 50) & (resultImgDust(:,:,3) < 50);
+        for c = 1:3
+            ch = combinedImg(:,:,c);
+            rd = resultImgDust(:,:,c);
+            ch(redMaskDust) = rd(redMaskDust);
+            combinedImg(:,:,c) = ch;
+        end
+
+        % Overlay stain red boxes
+        redMaskStain = (resultImgStain(:,:,1) > 200) & (resultImgStain(:,:,2) < 50) & (resultImgStain(:,:,3) < 50);
+        for c = 1:3
+            ch = combinedImg(:,:,c);
+            rs = resultImgStain(:,:,c);
+            ch(redMaskStain) = rs(redMaskStain);
+            combinedImg(:,:,c) = ch;
+        end
+
+        % Overlay cuts red boxes
         redMaskCuts = (resultImgCuts(:,:,1) > 200) & (resultImgCuts(:,:,2) < 50) & (resultImgCuts(:,:,3) < 50);
-        combinedImg(repmat(redMaskCuts, [1, 1, 3])) = resultImgCuts(repmat(redMaskCuts, [1, 1, 3]));
-        
+        for c = 1:3
+            ch = combinedImg(:,:,c);
+            rc = resultImgCuts(:,:,c);
+            ch(redMaskCuts) = rc(redMaskCuts);
+            combinedImg(:,:,c) = ch;
+        end
+
+        % Also overlay stain colour mask (semi-transparent red tint)
+        stainMaskOnly = redMaskStain;  % approximation for combined view
+        alpha = 0.20;
+        for c = 1:3
+            ch = double(combinedImg(:,:,c));
+            tint = double(resultImgStain(:,:,c));
+            ch(stainMaskOnly) = (1-alpha)*ch(stainMaskOnly) + alpha*tint(stainMaskOnly);
+            combinedImg(:,:,c) = uint8(ch);
+        end
+
         totalTime = toc(startTime);
-        
-        % Display combined result
+
         axes(axesMain);
         imshow(combinedImg);
-        title(axesMain, 'All Defects (Red: Yarn/Cuts, Cyan: Dust)', 'FontSize', 13, 'FontWeight', 'bold');
-        
-        % Update displays
-        set(txtProcessingTime, 'String', sprintf('Processing Time: %.4f seconds', totalTime), ...
-            'ForegroundColor', [0, 1, 0]);
-        set(txtDetectionType, 'String', 'Detection Type: All Defects (Combined)', ...
-            'ForegroundColor', [0, 1, 0]);
-        
-        % Generate combined results
-        totalDefects = numLooseYarns + numDustParticles + numCuts;
-        totalPercentage = yarnPercentage + dustPercentage + cutPercentage;
-        
+        title(axesMain, 'All Defects Detection Results (Red Boxes)', 'FontSize', 13, 'FontWeight', 'bold', 'Color', theme.fg);
+
+        set(txtProcessingTime, 'String', sprintf('Processing Time: %.4f seconds', totalTime), 'ForegroundColor', [0,1,0]);
+        set(txtDetectionType,  'String', 'Detection Type: All Defects (Combined)', 'ForegroundColor', [0,1,0]);
+
+        totalDefects    = numDustParticles + numStains + numCuts;
+        totalPercentage = dustPercentage   + stainPercentage + cutPercentage;
+
         if totalDefects == 0
-            resultStr = sprintf('✓ No defects detected\n\nYarn: 0 | Dust: 0 | Cuts: 0\nStatus: PASS\nQuality: Excellent\n\nProcessing completed in %.3f sec', totalTime);
+            resultStr  = sprintf('✓ No defects detected\n\nDust: 0 | Stain: 0 | Cuff Cuts: 0\nStatus: PASS\nQuality: Excellent\n\nProcessing completed in %.3f sec', totalTime);
             statusColor = [0, 0.6, 0];
-            statusMsg = 'Status: Analysis complete - No defects detected';
+            statusMsg  = 'Status: Analysis complete - No defects detected';
         else
-            resultStr = sprintf('✗ Quality Check FAILED\n\nYarn: %d (%.2f%%) | Dust: %d (%.2f%%) | Cuts: %d (%.2f%%)\nTotal Defects: %d | Total Affected: %.2f%%\n\nStatus: REJECT\n\nProcessing completed in %.3f sec', ...
-                numLooseYarns, yarnPercentage, numDustParticles, dustPercentage, numCuts, cutPercentage, totalDefects, totalPercentage, totalTime);
+            resultStr  = sprintf('✗ Quality Check FAILED\n\nDust: %d (%.2f%%) | Stain: %d (%.2f%%) | Cuts: %d (%.2f%%)\nTotal Defects: %d | Total Affected: %.2f%%\n\nStatus: REJECT\n\nProcessing completed in %.3f sec', ...
+                numDustParticles, dustPercentage, numStains, stainPercentage, numCuts, cutPercentage, totalDefects, totalPercentage, totalTime);
             statusColor = [1, 0, 0];
-            statusMsg = sprintf('Status: %d total defect(s) detected - Quality check FAILED', totalDefects);
+            statusMsg  = sprintf('Status: %d total defect(s) detected - Quality check FAILED', totalDefects);
         end
-        
-        set(txtResults, 'String', resultStr, 'ForegroundColor', statusColor);
-        set(txtStatus, 'String', statusMsg, 'ForegroundColor', statusColor);
+        set(txtResults, 'String', resultStr,  'ForegroundColor', statusColor);
+        set(txtStatus,  'String', statusMsg,  'ForegroundColor', statusColor);
     end
-    
-    % Function to reset defect detection on image
+
+    % ---- Reset ------------------------------------------------------
     function resetImage(~, ~)
         if ~isempty(img)
             axes(axesMain);
             imshow(img);
             title(axesMain, 'Original Image', 'FontSize', 14, 'FontWeight', 'bold', 'Color', theme.fg);
-            
-            set(txtProcessingTime, 'String', 'Processing Time: -- seconds', ...
-                'ForegroundColor', [0, 1, 0]);
-            set(txtDetectionType, 'String', 'Detection Type: None', ...
-                'ForegroundColor', [0, 1, 0]);
+            set(txtProcessingTime, 'String', 'Processing Time: -- seconds', 'ForegroundColor', [0,1,0]);
+            set(txtDetectionType,  'String', 'Detection Type: None',        'ForegroundColor', [0,1,0]);
             set(txtResults, 'String', 'Image reset. Select detection method.');
-            set(txtStatus, 'String', 'Status: Image reset to original', ...
-                'ForegroundColor', [0, 0.5, 0]);
+            set(txtStatus,  'String', 'Status: Image reset to original', 'ForegroundColor', [0, 0.5, 0]);
         end
     end
-    
-    % Function to exit cotton glove defect detection feature
+
+    % ---- Exit -------------------------------------------------------
     function exitApp(~, ~)
         selection = questdlg('Are you sure you want to exit?', ...
-                             'Exit Confirmation', ...
-                             'Yes', 'No', 'No');
+                             'Exit Confirmation', 'Yes', 'No', 'No');
         if strcmp(selection, 'Yes')
             close(fig);
         end
