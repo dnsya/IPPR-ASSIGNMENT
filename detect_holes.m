@@ -50,4 +50,47 @@ function defects = detect_holes(img)
             counter = counter + 1;
         end
     end
+
+    debug_mode = true;  % Change to false to disable debug views
+
+    if debug_mode
+        figure('Name', 'Hole Detection Debug', 'Position', [50, 100, 1100, 700]);
+        
+        % Step 1: Original Image
+        subplot(2, 3, 1);
+        imshow(img);
+        title('1. Original Image', 'FontSize', 10);
+        
+        % Step 2: Skin tone detection
+        subplot(2, 3, 2);
+        imshow(skin_mask);
+        title('2. Skin Tone Detection', 'FontSize', 10);
+        xlabel('Hue + Saturation + Value thresholds');
+        
+        % Step 3: Bright regions
+        subplot(2, 3, 3);
+        imshow(bright_regions);
+        title('3. Bright Regions', 'FontSize', 10);
+        xlabel('Gray value > 0.4');
+        
+        % Step 4: Combined potential holes
+        subplot(2, 3, 4);
+        imshow(potential_holes);
+        title('4. Potential Holes', 'FontSize', 10);
+        xlabel('Skin & Bright regions combined');
+        
+        % Step 5: Glove region
+        subplot(2, 3, 5);
+        imshow(glove_region);
+        title('5. Glove Region', 'FontSize', 10);
+        xlabel('Binary threshold + hole filling');
+        
+        % Step 6: Final holes within glove
+        subplot(2, 3, 6);
+        imshow(holes_final);
+        title('6. Holes Within Glove', 'FontSize', 10);
+        xlabel('Potential holes & glove region');
+        
+        sgtitle('Hole Detection - Step by Step Process', 'FontSize', 14, 'FontWeight', 'bold');
+    end
 end

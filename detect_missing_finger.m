@@ -65,4 +65,77 @@ function defects = detect_missing_finger(img)
             counter = counter + 1;
         end
     end
+
+    debug_mode = true;  % Change to false to disable debug views
+
+    if debug_mode
+        figure('Name', 'Missing Finger Detection Debug', 'Position', [50, 100, 1100, 700]);
+        
+        % Step 1: Original Image
+        subplot(2, 3, 1);
+        imshow(img);
+        title('1. Original Image', 'FontSize', 10);
+        
+        % Step 2: Glove mask (high threshold)
+        subplot(2, 3, 2);
+        imshow(glove_mask);
+        title('2. Glove Mask (0.65 threshold)', 'FontSize', 10);
+        
+        % Step 3: Finger mask (low threshold)
+        subplot(2, 3, 3);
+        imshow(finger_mask);
+        title('3. Finger Mask (0.40 threshold)', 'FontSize', 10);
+        
+        % Step 4: Cleaned glove
+        subplot(2, 3, 4);
+        imshow(glove_filled);
+        title('4. Cleaned Glove', 'FontSize', 10);
+        xlabel('After morphological operations');
+        
+        % Step 5: Missing mask
+        subplot(2, 3, 5);
+        imshow(missing_mask);
+        title('5. Missing Regions', 'FontSize', 10);
+        xlabel('Glove & ~Finger');
+        
+        % Step 6: Fingertip region overlay
+        subplot(2, 3, 6);
+        imshow(img);
+        hold on;
+        
+        % Draw glove outline
+        [B,~] = bwboundaries(glove_filled);
+        for k = 1:length(B)
+            boundary = B{k};
+            plot(boundary(:,2), boundary(:,1), 'b', 'LineWidth', 1);
+        end
+        
+        % Draw fingertip region line
+        yline(fingertip_limit, 'y--', 'LineWidth', 2);
+        
+        % Draw candidate missing finger regions
+        for k = 1:connected_components.NumObjects
+            area = finger_props(k).Area;
+            aspect_ratio = finger_props(k).MajorAxisLength / ...
+                           max(finger_props(k).MinorAxisLength,1);
+            
+            candidate = false(size(missing_mask));
+            candidate(connected_components.PixelIdxList{k}) = true;
+            touches_edge = any(candidate & edge_buffer & fingertip_region, 'all');
+            
+            if area > 2000 && area < 20000 && touches_edge && aspect_ratio <= 5
+                rectangle('Position', finger_props(k).BoundingBox, ...
+                         'EdgeColor', 'r', 'LineWidth', 2);
+                text(finger_props(k).BoundingBox(1), ...
+                     finger_props(k).BoundingBox(2)-10, ...
+                     ['Missing ' num2str(k)], ...
+                     'Color', 'r', 'FontWeight', 'bold', 'FontSize', 8);
+            end
+        end
+        hold off;
+        title('6. Detected Missing Fingers', 'FontSize', 10);
+        xlabel('Blue: glove, Yellow: fingertip line');
+        
+        sgtitle('Missing Finger Detection - Step by Step Process', 'FontSize', 14, 'FontWeight', 'bold');
+    end
 end

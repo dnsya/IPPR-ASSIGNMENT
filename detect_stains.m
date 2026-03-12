@@ -82,4 +82,78 @@ function defects = detect_stains(img)
             counter = counter + 1;
         end
     end
+
+    debug_mode = true;  % Change to false to disable debug views
+
+    if debug_mode
+        figure('Name', 'Stain Detection Debug', 'Position', [50, 100, 1100, 700]);
+        
+        % Step 1: Original Image
+        subplot(3, 3, 1);
+        imshow(img);
+        title('1. Original Image', 'FontSize', 10);
+        
+        % Step 2: Inverted binary
+        subplot(3, 3, 2);
+        imshow(inverted_binary_image);
+        title('2. Inverted Binary', 'FontSize', 10);
+        xlabel('Threshold at 0.45');
+        
+        % Step 3: Glove mask
+        subplot(3, 3, 3);
+        imshow(glove_mask);
+        title('3. Glove Mask', 'FontSize', 10);
+        xlabel('Largest region kept');
+        
+        % Step 4: Glove interior
+        subplot(3, 3, 4);
+        imshow(glove_interior);
+        title('4. Glove Interior', 'FontSize', 10);
+        xlabel('Removed edge buffer');
+        
+        % Step 5: Light stain mask
+        subplot(3, 3, 5);
+        imshow(light_stain_mask);
+        title('5. Light Stain Candidates', 'FontSize', 10);
+        
+        % Step 6: Dark stain mask
+        subplot(3, 3, 6);
+        imshow(dark_stain_mask);
+        title('6. Dark Stain Candidates', 'FontSize', 10);
+        xlabel('Red/Yellow hue regions');
+        
+        % Step 7: Skin mask (to exclude)
+        subplot(3, 3, 7);
+        imshow(skin_mask);
+        title('7. Skin Mask (Excluded)', 'FontSize', 10);
+        
+        % Step 8: Combined stain mask
+        subplot(3, 3, 8);
+        imshow(combined_stain_mask);
+        title('8. Combined Stains', 'FontSize', 10);
+        xlabel('Light | Dark - Skin');
+        
+        % Step 9: Final overlay
+        subplot(3, 3, 9);
+        imshow(img);
+        hold on;
+        
+        % Get properties and draw rectangles for visualization
+        connected_components = bwconncomp(combined_stain_mask);
+        stain_props = regionprops(connected_components, 'BoundingBox', 'Area', 'Eccentricity');
+        
+        for k = 1:connected_components.NumObjects
+            area = stain_props(k).Area;
+            ecc = stain_props(k).Eccentricity;
+            
+            if area > 400 && area < 20000 && ecc < 0.8
+                rectangle('Position', stain_props(k).BoundingBox, ...
+                         'EdgeColor', 'y', 'LineWidth', 2);
+            end
+        end
+        hold off;
+        title('9. Detected Stains', 'FontSize', 10);
+        
+        sgtitle('Stain Detection - Step by Step Process', 'FontSize', 14, 'FontWeight', 'bold');
+    end
 end
