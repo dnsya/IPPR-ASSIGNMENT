@@ -18,16 +18,12 @@ function [contamMask, contamStats, numContam] = detect_contamination(I, gloveMas
     S = hsv(:,:,2);
     V = hsv(:,:,3);
 
-
     %% STEP 2: Focus only on glove
     % Mask outside glove
     gray(~gloveMask) = 0;
     H(~gloveMask) = 0;
     S(~gloveMask) = 0;
     V(~gloveMask) = 0;
-
-    isNotBlue = (H < 0.45) | (H > 0.75);
-    isNotBlue = isNotBlue & (S > 0.3);  % Must have color
     
 
     %% STEP 3: Detect regions statistically different from glove
@@ -48,14 +44,14 @@ function [contamMask, contamStats, numContam] = detect_contamination(I, gloveMas
     
     colorDiff = abs(H - muH) + abs(S - muS) + abs(V - muV);
     colorOutlier = colorDiff > 0.35;
-    
+
     % --- Combine deviation cues ---
     rawMask = (intensityDiff | colorOutlier) & innerMask;
     
     %% STEP 4: Morphological cleanup
     rawMask = imopen(rawMask, strel('disk',5));    % remove speckle noise
     rawMask = imclose(rawMask, strel('disk',6));   % fill object gaps
-    rawMask = bwareaopen(rawMask, 3000);            % remove tiny blobs
+    rawMask = bwareaopen(rawMask, 5000);            % remove tiny blobs
     
 
     %% STEP 5: Analyze connected components
@@ -65,7 +61,7 @@ function [contamMask, contamStats, numContam] = detect_contamination(I, gloveMas
     % Filter regions by area/shape to remove small artifacts
     valid = false(1, numel(stats));
     for i = 1:numel(stats)
-        if stats(i).Area > 300 && stats(i).Area < 20000 && stats(i).Solidity > 0.4
+        if stats(i).Area > 300 && stats(i).Area < 20000 && stats(i).Solidity > 0.2
             valid(i) = true;
         end
     end
@@ -86,7 +82,7 @@ function [contamMask, contamStats, numContam] = detect_contamination(I, gloveMas
         hold off;
     end
 
-    fprintf('Contamination Detection: Found %d region(s)\n', numContam);
+    %fprintf('Contamination Detection: Found %d region(s)\n', numContam);
     figure;
     subplot(1,3,1), imshow(intensityDiff), title('Intensity Diff');
     subplot(1,3,2), imshow(colorOutlier), title('Color Outlier');

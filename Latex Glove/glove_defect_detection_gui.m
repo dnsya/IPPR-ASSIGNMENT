@@ -2,7 +2,7 @@ function glove_defect_detection_gui
 % GLOVE_DEFECT_DETECTION_GUI Main GUI for glove defect detection system
 %
 % - Import glove images
-% - Detect multiple types of defects: holes (body), fingertip holes, stains
+% - Detect multiple types of defects: tears (body defects), stains, contamination
 % - Visualize detection results
 % - View detection statistics
 
@@ -15,21 +15,27 @@ function glove_defect_detection_gui
                  'Position', [100 100 1200 650], ...
                  'Resize', 'off', ...
                  'MenuBar', 'none', ...
-                 'Color', [0.94 0.94 0.94]);
+                 'Color', [0.1 0.1 0.1]);
     
     % Create axes for image display
     axOriginal = axes('Parent', fig, ...
                       'Units', 'pixels', ...
                       'Position', [30 250 400 350], ...
                       'Box', 'on');
-    title(axOriginal, 'Original Image', 'FontSize', 12, 'FontWeight', 'bold');
+    title(axOriginal, 'Original Image', ...
+          'FontSize', 12, ...
+          'FontWeight', 'bold', ...
+          'Color', 'white');
     axis off;
     
     axResult = axes('Parent', fig, ...
                     'Units', 'pixels', ...
                     'Position', [470 250 400 350], ...
                     'Box', 'on');
-    title(axResult, 'Detection Result', 'FontSize', 12, 'FontWeight', 'bold');
+    title(axResult, 'Detection Result', ...
+          'FontSize', 12, ...
+          'FontWeight', 'bold', ...
+          'Color', 'white');
     axis off;
     
     % Control panel background
@@ -39,10 +45,20 @@ function glove_defect_detection_gui
             'Title', 'Controls', ...
             'FontSize', 11, ...
             'FontWeight', 'bold', ...
-            'BackgroundColor', [0.94 0.94 0.94]);
+            'BackgroundColor', [0.15 0.15 0.15],...
+            'ForegroundColor', 'white')
+    
+    uicontrol('Style', 'pushbutton', ...
+                        'String', 'RETURN', ...
+                        'Position', [957 605 170 40], ...
+                        'FontSize', 12, ...
+                        'FontWeight', 'bold', ...
+                        'BackgroundColor', [1, 0, 0], ...
+                        'ForegroundColor', 'black', ...
+                        'Callback', @loadImage);
     
     % Import Image button
-    btnLoad = uicontrol('Style', 'pushbutton', ...
+    uicontrol('Style', 'pushbutton', ...
                         'String', 'Import Image', ...
                         'Position', [930 530 220 50], ...
                         'FontSize', 12, ...
@@ -52,7 +68,7 @@ function glove_defect_detection_gui
                         'Callback', @loadImage);
     
     % Detect All Defects button
-    btnDetectAll = uicontrol('Style', 'pushbutton', ...
+    uicontrol('Style', 'pushbutton', ...
                              'String', 'Detect All Defects', ...
                              'Position', [930 460 220 50], ...
                              'FontSize', 12, ...
@@ -62,14 +78,15 @@ function glove_defect_detection_gui
                              'Callback', @detectAllDefects);
     
     % Individual detection buttons
-    btnDetectHoles = uicontrol('Style', 'pushbutton', ...
-                               'String', 'Detect Holes', ...
+    uicontrol('Style', 'pushbutton', ...
+                               'String', 'Detect Tears', ...
                                'Position', [930 400 220 40], ...
                                'FontSize', 11, ...
                                'BackgroundColor', [0.9 0.5 0.5], ...
-                               'Callback', @detectHolesOnly);
+                               'ForegroundColor', 'white', ...
+                               'Callback', @detectTearsOnly);
     
-    btnDetectContamination = uicontrol('Style', 'pushbutton', ...
+    uicontrol('Style', 'pushbutton', ...
                              'String', 'Detect Contamination', ...
                              'Position', [930 350 220 40], ...
                              'FontSize', 11, ...
@@ -77,19 +94,21 @@ function glove_defect_detection_gui
                              'ForegroundColor', 'white', ...
                              'Callback', @detectContaminationOnly);
     
-    btnDetectStain = uicontrol('Style', 'pushbutton', ...
+    uicontrol('Style', 'pushbutton', ...
                                'String', 'Detect Stains', ...
                                'Position', [930 300 220 40], ...
                                'FontSize', 11, ...
                                'BackgroundColor', [0.9 0.7 0.2], ...
+                               'ForegroundColor', 'white', ...
                                'Callback', @detectStainOnly);
     
     % Clear button
-    btnClear = uicontrol('Style', 'pushbutton', ...
+    uicontrol('Style', 'pushbutton', ...
                          'String', 'Clear', ...
                          'Position', [930 270 220 25], ...
                          'FontSize', 10, ...
                          'BackgroundColor', [0.95 0.95 0.95], ...
+                         'ForegroundColor', 'black', ...
                          'Callback', @clearDisplay);
     
     % Results panel
@@ -99,16 +118,33 @@ function glove_defect_detection_gui
                           'Title', 'Detection Results', ...
                           'FontSize', 11, ...
                           'FontWeight', 'bold', ...
-                          'BackgroundColor', 'white');
+                          'BackgroundColor', [0.15 0.15 0.15], ...
+                          'ForegroundColor', 'white');
     
     % Results text box - LISTBOX for scrolling
     txtResults = uicontrol('Parent', resultPanel, ...
                            'Style', 'listbox', ...
-                           'String', {'No detection performed yet.'}, ...
+                           'String', {
+                               '╔═══════════════════════════════════════════════════════════╗';
+                               '║          GLOVE DEFECT DETECTION SYSTEM                    ║';
+                               '╚═══════════════════════════════════════════════════════════╝';
+                               '';
+                               '  Welcome to the Glove Defect Detection System';
+                               '';
+                               '  Please load an image to begin analysis.';
+                               '';
+                               '  Detectable Defects:';
+                               '    • Tears (body defects)';
+                               '    • Surface Contamination (foreign objects)';
+                               '    • Stains (discoloration and marks)';
+                               '';
+                               '═══════════════════════════════════════════════════════════';
+                           }, ...
                            'Position', [10 10 1110 170], ...
                            'FontSize', 10, ...
                            'FontName', 'FixedWidth', ...
-                           'BackgroundColor', 'white', ...
+                           'BackgroundColor', [0.15 0.15 0.15], ...
+                           'ForegroundColor', 'white',...
                            'Max', 2, ...
                            'Min', 0);
     
@@ -116,6 +152,8 @@ function glove_defect_detection_gui
     handles.image = [];
     handles.gloveMask = [];
     handles.fileName = '';
+    handles.axOriginal = axOriginal;
+    handles.axResult = axResult;
     guidata(fig, handles);
     
     %% Callback Functions
@@ -148,7 +186,18 @@ function glove_defect_detection_gui
         title(axResult, 'Detection Result', 'FontSize', 12, 'FontWeight', 'bold');
         axis off;
         
-        set(txtResults, 'String', 'Image loaded successfully. Click "Detect All Defects" to analyze.');
+        set(txtResults, 'String', {
+            '╔═══════════════════════════════════════════════════════════╗';
+            '║              IMAGE LOADED SUCCESSFULLY                    ║';
+            '╚═══════════════════════════════════════════════════════════╝';
+            '';
+            '  Ready for defect detection analysis.';
+            '';
+            '  Click "Detect All Defects" to analyze all defect types';
+            '  or select individual detection buttons for specific analysis.';
+            '';
+            '═══════════════════════════════════════════════════════════';
+        });
     end
     
     function detectAllDefects(~, ~)
@@ -159,7 +208,20 @@ function glove_defect_detection_gui
             return;
         end
         
-        set(txtResults, 'String', 'Processing... Please wait.');
+        set(txtResults, 'String', {
+            '╔═══════════════════════════════════════════════════════════╗';
+            '║              PROCESSING... PLEASE WAIT                    ║';
+            '╚═══════════════════════════════════════════════════════════╝';
+            '';
+            '  Analyzing image for defects...';
+            '';
+            '  Step 1: Segmenting glove region';
+            '  Step 2: Detecting contamination';
+            '  Step 3: Detecting tears';
+            '  Step 4: Detecting stains';
+            '';
+            '═══════════════════════════════════════════════════════════';
+        });
         drawnow;
         
         I = handles.image;
@@ -170,47 +232,52 @@ function glove_defect_detection_gui
         guidata(fig, handles);
         
         % Detect all defect types
-        [holeMask, holeStats, numHoles] = detect_holes(I, gloveMask);
         [contamMask, contamStats, numContam] = detect_contamination(I, gloveMask);
+        handles.contamMask = contamMask;
+        guidata(fig, handles);
+        
+        [tearMask, tearStats, numTears] = detect_tears(I, gloveMask);
+
+
         [stainMask, stainStats, numStains] = detect_stains(I, gloveMask);
+        handles.stainMask = stainMask;
+        guidata(fig, handles);
         
         % Display results
         axes(axResult);
         imshow(I);
         hold on;
         
-        % Draw holes (red)
-        for i = 1:length(holeStats)
-            rectangle('Position', holeStats(i).BoundingBox, ...
+        % Draw tears (red)
+        for i = 1:length(tearStats)
+            rectangle('Position', tearStats(i).BoundingBox, ...
                       'EdgeColor', 'r', 'LineWidth', 2);
-            plot(holeStats(i).Centroid(1), holeStats(i).Centroid(2), ...
+            plot(tearStats(i).Centroid(1), tearStats(i).Centroid(2), ...
                  'r+', 'MarkerSize', 12, 'LineWidth', 2);
-            text(holeStats(i).BoundingBox(1), holeStats(i).BoundingBox(2)-10, ...
-                 'HOLE', 'Color', 'r', 'FontSize', 9, 'FontWeight', 'bold', ...
-                 'BackgroundColor', 'white');
+            text(tearStats(i).BoundingBox(1), tearStats(i).BoundingBox(2)-10, ...
+                 'TEAR', 'Color', 'r', 'FontSize', 9, 'FontWeight', 'bold');
         end
         
-        % Draw contamination (blue) with LARGER markers
+        % Draw contamination (red) 
         for i = 1:length(contamStats)
             % Draw bounding box
             rectangle('Position', contamStats(i).BoundingBox, ...
-                      'EdgeColor', [0.2 0.2 0.9], 'LineWidth', 3);
+                      'EdgeColor', [1 0 0], 'LineWidth', 1);
             
             % Draw large X marker covering the contamination area
             bbox = contamStats(i).BoundingBox;
-            x1 = bbox(1);
-            y1 = bbox(2);
-            x2 = bbox(1) + bbox(3);
-            y2 = bbox(2) + bbox(4);
+            %x1 = bbox(1);
+            %y1 = bbox(2);
+            %x2 = bbox(1) + bbox(3);
+            %y2 = bbox(2) + bbox(4);
             
             % Draw diagonal cross (X)
-            plot([x1 x2], [y1 y2], 'Color', [1 0 0], 'LineWidth', 3);  % Red X
-            plot([x2 x1], [y1 y2], 'Color', [1 0 0], 'LineWidth', 3);  % Red X
+            %plot([x1 x2], [y1 y2], 'Color', [1 0 0], 'LineWidth', 3);  % Red X
+            %plot([x2 x1], [y1 y2], 'Color', [1 0 0], 'LineWidth', 3);  % Red X
             
             % Label
             text(bbox(1), bbox(2)-10, ...
-                 'CONTAMINATION', 'Color', 'r', 'FontSize', 10, 'FontWeight', 'bold', ...
-                 'BackgroundColor', 'white');
+                 'CONTAMINATION', 'Color', 'r', 'FontSize', 10, 'FontWeight', 'bold');
         end
         
         % Draw stains (yellow)
@@ -220,40 +287,47 @@ function glove_defect_detection_gui
             plot(stainStats(i).Centroid(1), stainStats(i).Centroid(2), ...
                  'y+', 'MarkerSize', 12, 'LineWidth', 2);
             text(stainStats(i).BoundingBox(1), stainStats(i).BoundingBox(2)-10, ...
-                 'STAIN', 'Color', [0.9 0.7 0], 'FontSize', 9, 'FontWeight', 'bold', ...
-                 'BackgroundColor', 'white');
+                 'STAIN', 'Color', [0.9 0.7 0], 'FontSize', 9, 'FontWeight', 'bold');
         end
         
         hold off;
         title(axResult, 'All Defects Detected', 'FontSize', 12, 'FontWeight', 'bold');
         
-        % Update results text - LISTBOX FORMAT
-        totalDefects = numHoles + numContam + numStains;  
+        % Update results text - PROFESSIONAL LISTBOX FORMAT
+        totalDefects = numTears + numContam + numStains;
         
-        
+        % Create professional formatted output
         resultLines = {
-            'DETECTION SUMMARY';
-            '=====================================';
+            '╔═══════════════════════════════════════════════════════════╗';
+            '║              DEFECT DETECTION SUMMARY                     ║';
+            '╚═══════════════════════════════════════════════════════════╝';
             '';
-            sprintf('Total Defects Found: %d', totalDefects);
+            sprintf('  Total Defects Found: %d', totalDefects);
             '';
-            'Breakdown:';
-            sprintf('  • Holes: %d', numHoles);
-            sprintf('  • Surface Contamination: %d', numContam);
-            sprintf('  • Stains: %d', numStains);
+            '─────────────────────────────────────────────────────────────';
+            '  DEFECT BREAKDOWN:';
+            '─────────────────────────────────────────────────────────────';
             '';
-            sprintf('Status: %s', getQualityStatus(totalDefects));
+            sprintf('    [TEARS]           : %d detected', numTears);
+            sprintf('    [CONTAMINATION]   : %d detected', numContam);
+            sprintf('    [STAINS]          : %d detected', numStains);
             '';
-            'Legend:';
-            '  Red = Holes';
-            '  Blue = Contamination';
-            '  Yellow = Stains'
+            '─────────────────────────────────────────────────────────────';
+            sprintf('  QUALITY STATUS: %s', getQualityStatus(totalDefects));
+            '─────────────────────────────────────────────────────────────';
+            '';
+            '  VISUAL LEGEND:';
+            '    • Red Box/Marker     → Tears';
+            '    • Blue Box + Red X   → Contamination';
+            '    • Yellow Box/Marker  → Stains';
+            '';
+            '═══════════════════════════════════════════════════════════';
         };
      
         set(txtResults, 'String', resultLines);
     end
     
-    function detectHolesOnly(~, ~)
+    function detectTearsOnly(~, ~)
         handles = guidata(fig);
         
         if isempty(handles.image)
@@ -264,11 +338,37 @@ function glove_defect_detection_gui
         I = handles.image;
         gloveMask = segment_glove_hsv(I);
         
-        [holeMask, holeStats, numHoles] = detect_holes(I, gloveMask);
+        handles = guidata(fig);
+
+        %if isfield(handles, 'contamMask')
+        %    contamMask = handles.contamMask;
+        %elseif isfield(handles, 'stainMask')
+        %    stainMask = handles.stainMask;
+        %else
+        %    % Fallback: compute contamination if not done yet
+        %    [contamMask, ~, ~] = detect_contamination(I, gloveMask);
+        %end
         
-        displaySingleDefect(I, holeStats, 'HOLE', 'r', 'Holes Detected');
+        % Detect tear
+        [tearMask, tearStats, numTears] = detect_tears(I, gloveMask);
+                
+        displaySingleDefect(I, tearStats, 'TEAR', 'r', 'Tears Detected');
         
-        set(txtResults, 'String', sprintf('Hole Detection:\n%d hole(s) found in glove body.', numHoles));
+        % Professional results display
+        resultLines = {
+            '╔═══════════════════════════════════════════════════════════╗';
+            '║                  TEAR DETECTION RESULTS                   ║';
+            '╚═══════════════════════════════════════════════════════════╝';
+            ...
+            sprintf('  Total Tears Detected: %d', numTears);
+            ...
+            '  Detection Area: Glove body (excluding contamination)';
+            '  Detection Method: Topology-based void detection';
+            '';
+            '═══════════════════════════════════════════════════════════';
+        };
+        
+        set(txtResults, 'String', resultLines);
     end
     
     function detectStainOnly(~, ~)
@@ -286,10 +386,25 @@ function glove_defect_detection_gui
         
         displaySingleDefect(I, stainStats, 'STAIN', [1 0.8 0], 'Stains Detected');
         
-        set(txtResults, 'String', sprintf('Stain Detection:\n%d stain(s) found.', numStains));
+        % Professional results display
+        resultLines = {
+            '╔═══════════════════════════════════════════════════════════╗';
+            '║                 STAIN DETECTION RESULTS                   ║';
+            '╚═══════════════════════════════════════════════════════════╝';
+            '';
+            sprintf('  Total Stains Detected: %d', numStains);
+            '';
+            '  Detection Type: Surface discoloration & marks';
+            '  Detection Method: Statistical deviation analysis';
+            '';
+            '═══════════════════════════════════════════════════════════';
+        };
+        
+        set(txtResults, 'String', resultLines);
     end
 
     function detectContaminationOnly(~, ~)
+        
         handles = guidata(fig);
     
         if isempty(handles.image)
@@ -304,6 +419,7 @@ function glove_defect_detection_gui
     
         % Detect contamination
         [contamMask, contamStats, numContam] = detect_contamination(I, gloveMask);
+        handles.contamMask = contamMask;
     
         % Display result
         axes(axResult);
@@ -326,13 +442,27 @@ function glove_defect_detection_gui
         hold off;
         title(axResult, 'Surface Contamination Detected');
     
-        set(txtResults, 'String', ...
-            sprintf('Surface Contamination Detection:\n%d object(s) detected.', numContam));
+        % Professional results display
+        resultLines = {
+            '╔═══════════════════════════════════════════════════════════╗';
+            '║            CONTAMINATION DETECTION RESULTS                ║';
+            '╚═══════════════════════════════════════════════════════════╝';
+            '';
+            sprintf('  Total Contamination Detected: %d', numContam);
+            '';
+            '  Detection Type: Foreign objects on glove surface';
+            '  Examples: Rubber bands, strings, dirt, residue';
+            '';
+            '═══════════════════════════════════════════════════════════';
+        };
+        
+        set(txtResults, 'String', resultLines);
     end
 
     
     function displaySingleDefect(I, stats, label, color, titleStr)
-        axes(axResult);
+        handles = guidata(fig);  % Use fig instead of gcf
+        axes(handles.axResult);
         imshow(I);
         hold on;
         
@@ -351,21 +481,38 @@ function glove_defect_detection_gui
         end
         
         hold off;
-        title(axResult, titleStr, 'FontSize', 12, 'FontWeight', 'bold');
+        title(handles.axResult, titleStr, 'FontSize', 12, 'FontWeight', 'bold', 'Color', 'white');
     end
     
     function clearDisplay(~, ~)
         axes(axOriginal);
         cla;
-        title(axOriginal, 'Original Image', 'FontSize', 12, 'FontWeight', 'bold');
+        title(axOriginal, 'Original Image', ...
+              'FontSize', 12, ...
+              'FontWeight', 'bold', ...
+              'Color', 'white');
+
         axis off;
         
         axes(axResult);
         cla;
-        title(axResult, 'Detection Result', 'FontSize', 12, 'FontWeight', 'bold');
+        title(axResult, 'Detection Result', ...
+              'FontSize', 12, ...
+              'FontWeight', 'bold', ...
+              'Color', 'white');
         axis off;
         
-        set(txtResults, 'String', 'Display cleared. Load an image to begin.');
+        set(txtResults, 'String', {
+            '╔═══════════════════════════════════════════════════════════╗';
+            '║          GLOVE DEFECT DETECTION SYSTEM                    ║';
+            '╚═══════════════════════════════════════════════════════════╝';
+            '';
+            '  Display cleared. Ready for next analysis.';
+            '';
+            '  Please load an image to begin detection.';
+            '';
+            '═══════════════════════════════════════════════════════════';
+        });
         
         handles = guidata(fig);
         handles.image = [];

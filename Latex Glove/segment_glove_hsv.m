@@ -48,5 +48,5 @@ function gloveMask = segment_glove_hsv(I)
     %% --- STEP 5: Final safety cleanup
     gloveMask = bwareaopen(gloveMask, 5000);
 
-    fprintf('Glove segmentation completed (adaptive HSV)\n');
+    %fprintf('Glove segmentation completed (adaptive HSV)\n');
 end

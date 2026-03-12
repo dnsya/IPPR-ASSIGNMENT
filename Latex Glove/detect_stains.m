@@ -1,138 +1,190 @@
 function [stainMask, stainStats, numStains] = detect_stains(I, gloveMask)
-% DETECT_STAINS Robust stain detection with enhanced noise removal
-
-% DETECT_STAINS Detects discoloration and stains on glove surface
+% DETECT_STAINS Robust stain detection for glove inspection
 %
 % INPUT:
 %   I         - RGB image
 %   gloveMask - binary mask of glove region
-
-    %% STEP 1: Preprocessing 
+%
+% OUTPUT:
+%   stainMask  - binary mask of detected stains
+%   stainStats - region properties of stains
+%   numStains  - number of stains detected
+    
+    %% STEP 1: Preprocessing
     I = im2double(I);
     Igray = rgb2gray(I);
-
-    % median filter for speckle / sensor noise
-    Igray = medfilt2(Igray, [3 3]);
-
-    % slightly stronger smoothing
-    Igray = imgaussfilt(Igray, 1.6);
-
-    %% STEP 2: Remove glove edges
-    innerMask = imerode(gloveMask, strel('disk', 12));
-
-    %% STEP 3: Remove illumination (UNCHANGED)
-    %background = imgaussfilt(Igray, 25);
-    %highpass = abs(Igray - background);
-
-    localMean = imgaussfilt(Igray, 25);     
-    localStd  = imgaussfilt(abs(Igray - localMean), 25);  
-
+    
+    % Remove noise
+    Igray = medfilt2(Igray,[3 3]);
+    Igray = imgaussfilt(Igray,1.6);
+    
+    % Remove glove edges
+    innerMask = imerode(gloveMask, strel('disk',12));
+    
+    %% STEP 2: Illumination Normalization
+    localMean = imgaussfilt(Igray,25);
+    localStd  = imgaussfilt(abs(Igray - localMean),25);
+    
     highpass = abs(Igray - localMean) ./ (localStd + eps);
-
-    %% STEP 4: Model normal glove appearance
-    mu = mean(highpass(innerMask), 'omitnan');
-    sigma = std(highpass(innerMask), 'omitnan');
-
-    deviationMap = abs(highpass - mu) / (sigma + eps);
-
-    %% STEP 5: Initial stain detection
+    
+    % Model normal glove appearance
+    mu = mean(highpass(innerMask),'omitnan');
+    sigma = std(highpass(innerMask),'omitnan');
+    
+    deviationMap = abs(highpass - mu) ./ (sigma + eps);
+    
+    %% STEP 3: Initial Stain Detection
     stainMask = deviationMap > 2.0;
     stainMask = stainMask & innerMask;
-
-    % Dark/wet stain boost
-    gloveOnly = Igray .* innerMask;  
-
-    muGlove = mean(gloveOnly(innerMask), 'omitnan');
-    sigmaGlove = std(gloveOnly(innerMask), 'omitnan');
-
-    % Threshold for pixels significantly darker than glove average
-    darkThreshold = muGlove - 1.2*sigmaGlove;  
-    darkPixels = (gloveOnly < darkThreshold) & innerMask;
     
-    % Combine with existing stain mask
-    stainMask = stainMask | darkPixels;
-
-    %% STEP 6: Wrinkle suppression 
-    [Gmag, ~] = imgradient(Igray);
-
-    wrinkleMask = Gmag > prctile(Gmag(innerMask), 90);
-    wrinkleMask = imopen(wrinkleMask, strel('line', 15, 0)) | ...
-                  imopen(wrinkleMask, strel('line', 15, 90));
-
+    %% STEP 4: Dark Stain Enhancement
+    glovePixels = Igray(innerMask);
+    
+    muGlove = mean(glovePixels);
+    sigmaGlove = std(glovePixels);
+    
+    darkThreshold = muGlove - 1.2*sigmaGlove;
+    
+    darkPixels = (Igray < darkThreshold) & innerMask;
+    
+    % Strong dark detector (important for black stains)
+    veryDark = (Igray < 0.35) & innerMask;
+    
+    stainMask = stainMask | darkPixels | veryDark;
+    
+    %% STEP 5: Wrinkle Suppression (Improved)
+    
+    [Gmag,~] = imgradient(Igray);
+    
+    % detect strong gradients
+    wrinkleMask = Gmag > prctile(Gmag(innerMask),92);
+    
+    % clean noise
+    wrinkleMask = bwareaopen(wrinkleMask,40);
+    
+    % analyze shapes
+    CCw = bwconncomp(wrinkleMask);
+    statsW = regionprops(CCw,'Area','Eccentricity','BoundingBox');
+    
+    validWrinkle = false(1,numel(statsW));
+    
+    for i = 1:numel(statsW)
+    
+        longThin = statsW(i).Eccentricity > 0.95;
+        mediumArea = statsW(i).Area > 40 && statsW(i).Area < 3000;
+    
+        if longThin && mediumArea
+            validWrinkle(i) = true;
+        end
+    
+    end
+    
+    wrinkleMask = ismember(labelmatrix(CCw), find(validWrinkle));
+    
+    % remove wrinkles from stain mask
     stainMask = stainMask & ~wrinkleMask;
-
-    %% STEP 7: Morphological cleanup 
-    stainMask = imopen(stainMask, strel('disk', 3));   
-    stainMask = imclose(stainMask, strel('disk', 6));
-
-    % Threshold for bright pixels (likely specular highlights)
-    reflectionMask = Igray > prctile(Igray(innerMask), 99);  
-    reflectionMask = reflectionMask & innerMask;
-
-    stainDilated = imdilate(stainMask, strel('disk', 3));
-    reflectionMask = reflectionMask & stainDilated;
-
-    stainMask = stainMask | reflectionMask;
-
-    % ADDED: fill small holes inside stains
-    stainMask = imfill(stainMask, 'holes');
-
-    % ADDED: remove small isolated noise
-    stainMask = bwareaopen(stainMask, 300);
-
-    % Remove small isolated objects
-    stainMask = bwareaopen(stainMask, 500);  
     
-    % Optional: smooth edges to remove thin lines
-    stainMask = imopen(stainMask, strel('disk', 4));
-
-    %% STEP 8: Region filtering 
+    %% STEP 6: Morphological Cleanup
+    stainMask = imopen(stainMask, strel('disk',8));
+    stainMask = imclose(stainMask, strel('disk',3));
+    
+    % Remove tiny noise
+    stainMask = bwareaopen(stainMask,1000);
+    
+    % Fill holes inside stains
+    stainMask = imfill(stainMask,'holes');
+    
+    
+    
+    %% STEP 7: Reflection Detection
+    reflectionMask = Igray > prctile(Igray(innerMask),99);
+    
+    % reflections usually have low saturation
+    hsv = rgb2hsv(I);
+    S = hsv(:,:,2);
+    
+    reflectionMask = reflectionMask & S < 0.2;
+    
+    % REMOVE reflections
+    stainMask = stainMask & ~reflectionMask;
+    
+    %% STEP 8: Region Filtering
     CC = bwconncomp(stainMask);
-    stats = regionprops(CC, Igray, ...
-        'Area', 'BoundingBox', 'Centroid', ...
-        'Eccentricity', 'Solidity', 'MeanIntensity');
+    
+    stats = regionprops(CC,Igray,...
+        'Area','BoundingBox','Centroid','Eccentricity','Solidity','MeanIntensity');
+    
+    % Convert to HSV for color comparison
     Ihsv = rgb2hsv(I);
-
+    
     H = Ihsv(:,:,1);
     S = Ihsv(:,:,2);
     V = Ihsv(:,:,3);
     
-    meanH = mean(H(innerMask), 'omitnan');
-    meanS = mean(S(innerMask), 'omitnan');
-    meanV = mean(V(innerMask), 'omitnan');
-
-    valid = false(1, numel(stats));
+    meanH = mean(H(innerMask),'omitnan');
+    meanS = mean(S(innerMask),'omitnan');
+    meanV = mean(V(innerMask),'omitnan');
+    
+    valid = false(1,numel(stats));
     
     for i = 1:numel(stats)
-        areaOK = stats(i).Area >= 300 && stats(i).Area <= 20000;
-        shapeOK = stats(i).Eccentricity < 0.95 && stats(i).Solidity > 0.5;
     
-        % Get region mask
-        regionMask = ismember(labelmatrix(CC), i);
+        areaOK = stats(i).Area >= 200 && stats(i).Area <= 20000;
+        shapeOK = stats(i).Eccentricity < 0.97 && stats(i).Solidity > 0.45;
     
-        % Mean HSV of region
+        regionMask = ismember(labelmatrix(CC),i);
+    
         hMean = mean(H(regionMask));
         sMean = mean(S(regionMask));
         vMean = mean(V(regionMask));
     
-        % COLOR DIFFERENCE check
-        colorDist = abs(hMean - meanH) + ...
-                    abs(sMean - meanS) + ...
-                    abs(vMean - meanV);
+        % simpler color difference
+        colorDist = abs(hMean-meanH) + ...
+                    abs(sMean-meanS) + ...
+                    abs(vMean-meanV);
     
-        if areaOK && shapeOK && colorDist > 0.6 * mean([meanH meanS meanV])
-            valid(i) = true;   % real stain
+        if areaOK && shapeOK && colorDist > 0.15
+            valid(i) = true;
         end
     end
-
-% OUTPUT:
-%   stainMask  - binary mask of stains
-%   stainStats - regionprops of detected stains
-%   numStains  - number of stains    
-
-    stainMask = ismember(labelmatrix(CC), find(valid));
+    
+    %% STEP 9: Final Output
+    stainMask = ismember(labelmatrix(CC),find(valid));
     stainStats = stats(valid);
     numStains = sum(valid);
-
+    
     fprintf('Stain Detection: Found %d stain(s)\n', numStains);
+    
+    %% STEP 10: Debug Visualization
+    figure('Name','Stain Detection Debug','NumberTitle','off');
+    
+    subplot(2,3,1)
+    imshow(Igray)
+    title('Preprocessed Grayscale')
+    
+    subplot(2,3,2)
+    imshow(deviationMap,[])
+    title('Deviation Map')
+    
+    subplot(2,3,3)
+    imshow(stainMask)
+    title('Final Stain Mask')
+    
+    subplot(2,3,4)
+    imshow(wrinkleMask)
+    title('Wrinkle Mask')
+    
+    subplot(2,3,5)
+    imshow(I)
+    hold on
+    for i = 1:numStains
+        rectangle('Position',stainStats(i).BoundingBox,...
+            'EdgeColor','y','LineWidth',2)
+    end
+    title(['Detected Stains: ',num2str(numStains)])
+    hold off
+    
+    subplot(2,3,6)
+    imshow(darkPixels)
+    title('Dark Pixels')
 end
