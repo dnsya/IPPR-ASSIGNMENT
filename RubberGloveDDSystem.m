@@ -77,9 +77,10 @@ classdef RubberGloveDDSystem < matlab.apps.AppBase
         function drawDefect(app, bb, label, color)
             expand = 10;
             bb_expanded = [bb(1)-expand, bb(2)-expand, bb(3)+2*expand, bb(4)+2*expand];
-            rectangle(app.ImageAxes, 'Position', bb_expanded, 'EdgeColor', color, 'LineWidth', 3);
-            text(app.ImageAxes, bb(1), bb(2)-15, label, 'Color', color, ...
-                'FontWeight', 'bold', 'FontSize', 12, 'BackgroundColor', 'w');
+            rectangle(app.ImageAxes, 'Position', bb_expanded, 'EdgeColor', color, 'LineWidth', 1.5);
+            text(app.ImageAxes, bb_expanded(1), bb_expanded(2)-20, label, 'Color', color, ...
+                'FontWeight', 'bold', 'FontSize', 9, ...
+                'VerticalAlignment', 'bottom', 'HorizontalAlignment', 'left');
         end
 
         function addConsoleMessage(app, message)
