@@ -1,9 +1,32 @@
-# IPPR-ASSIGNMENT
+# IPPR Assignment  
+## Glove Defect Detection System  
 
-Glove Defect Detection System
+This project focuses on detecting defects in different types of gloves using image processing techniques.
 
-Types of Gloves:
-1. Latex
-2. Cotton
-3. Rubber
-4. Nitrile
+---
+
+## Team Members
+- Chun Kit  
+- Marvind  
+- Nesya  
+- Victorio  
+
+---
+
+## Types of Gloves
+- Latex  
+- Cotton  
+- Rubber  
+- Nitrile  
+
+---
+
+## ️Defect Types
+
+### Latex Defects
+- Stuff
+
+### Nitrile Defects
+- Hole  
+- Stain  
+- Missing Finger  
