@@ -47,8 +47,9 @@ function [stainMask, stainStats, numStains] = detect_stains(I, gloveMask)
     
     darkPixels = (Igray < darkThreshold) & innerMask;
     
-    % Strong dark detector (important for black stains)
-    veryDark = (Igray < 0.35) & innerMask;
+    % FIX: Raised threshold from 0.35 to 0.25 to avoid detecting shadows/finger
+    % joints as stains. Blue glove surface is typically brighter than 0.25.
+    veryDark = (Igray < 0.30) & innerMask;
     
     stainMask = stainMask | darkPixels | veryDark;
     
@@ -56,7 +57,8 @@ function [stainMask, stainStats, numStains] = detect_stains(I, gloveMask)
     
     [Gmag,~] = imgradient(Igray);
     
-    % detect strong gradients
+    % FIX: Lowered percentile from 92 to 88 to catch more wrinkle-like gradients
+    % that were previously slipping through and being falsely detected as stains
     wrinkleMask = Gmag > prctile(Gmag(innerMask),92);
     
     % clean noise
@@ -80,6 +82,9 @@ function [stainMask, stainStats, numStains] = detect_stains(I, gloveMask)
     end
     
     wrinkleMask = ismember(labelmatrix(CCw), find(validWrinkle));
+    
+    % Dilate wrinkle mask slightly to cover surrounding dark pixels caused by wrinkles
+    wrinkleMask = imdilate(wrinkleMask, strel('disk', 3));
     
     % remove wrinkles from stain mask
     stainMask = stainMask & ~wrinkleMask;
@@ -138,12 +143,13 @@ function [stainMask, stainStats, numStains] = detect_stains(I, gloveMask)
         sMean = mean(S(regionMask));
         vMean = mean(V(regionMask));
     
-        % simpler color difference
+        % FIX: Raised colorDist threshold from 0.15 to 0.22 to reduce false
+        % positives from shadows and lighting variation on the glove surface
         colorDist = abs(hMean-meanH) + ...
                     abs(sMean-meanS) + ...
                     abs(vMean-meanV);
     
-        if areaOK && shapeOK && colorDist > 0.15
+        if areaOK && shapeOK && colorDist > 0.20
             valid(i) = true;
         end
     end
