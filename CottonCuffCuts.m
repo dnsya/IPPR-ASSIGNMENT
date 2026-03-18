@@ -1,8 +1,9 @@
 function [resultImg, numCuts, cutPercentage, processingTime] = CottonCuffCuts(img)
 
+    % Start timer
     tic;
 
-    % Step 1: Ensure RGB
+    % Step 1: Ensure RGB format and convert to grayscale
     if size(img,3) == 1
         rgbImg = cat(3, img, img, img);
     else
@@ -33,7 +34,7 @@ function [resultImg, numCuts, cutPercentage, processingTime] = CottonCuffCuts(im
     stats = regionprops(gloveMask, 'BoundingBox');
     bb = stats.BoundingBox;
 
-    % Only bottom 20% = cuff area
+    % Define cuff as the bottom 20% of the glove bounding box height
     cuffTop = round(bb(2) + 0.80 * bb(4));
 
     cuffMask = false(rows, cols);
@@ -46,13 +47,13 @@ function [resultImg, numCuts, cutPercentage, processingTime] = CottonCuffCuts(im
 
     cutCand = hullMask & ~cuffMask;
 
-    % Only near cuff edge (important!)
+    % Restrict candidates to within 6px dilation of the cuff boundary
     edgeZone = imdilate(cuffMask, strel('disk', 6));
     cutCand = cutCand & edgeZone;
 
     % Step 5: Strong cleanup
     cutCand = imclose(cutCand, strel('disk', 5));
-    cutCand = bwareaopen(cutCand, 600);   % remove dust completely
+    cutCand = bwareaopen(cutCand, 600);   % Remove small false positive regions below 600px area
 
     % Step 6: Shape filtering
     cc = bwconncomp(cutCand);
@@ -63,17 +64,17 @@ function [resultImg, numCuts, cutPercentage, processingTime] = CottonCuffCuts(im
 
     for k = 1:cc.NumObjects
         A = stats(k).Area;
-        ext = stats(k).Extent;   % compactness measure
+        ext = stats(k).Extent;   % ratio of region pixels to bounding box area
 
         bb2 = stats(k).BoundingBox;
         width = bb2(3);
         height = bb2(4);
 
-        % Strict Cut Rules
-        if A > 1000 && ...          % must be large
-           width > 20 && ...        % must be wide
-           height > 15 && ...       % not a thin line
-           ext < 0.8               % irregular shape (cut-like)
+        % Accept region as a cut if it meets all shape criteria
+        if A > 1000 && ...          % minimum area to exclude noise
+           width > 20 && ...        % minimum width to exclude thin artifacts
+           height > 15 && ...       % minimum height to exclude horizontal scratches
+           ext < 0.8               % low extent indicates an irregular, cut-like shape
 
             validMask(cc.PixelIdxList{k}) = true;
             numCuts = numCuts + 1;
@@ -103,7 +104,7 @@ function [resultImg, numCuts, cutPercentage, processingTime] = CottonCuffCuts(im
 
         lw = 3;
 
-        % top
+        % top 
         resultImg(y:min(y+lw,y2), x:x2, 1) = 255;
         resultImg(y:min(y+lw,y2), x:x2, 2:3) = 0;
 
@@ -120,5 +121,5 @@ function [resultImg, numCuts, cutPercentage, processingTime] = CottonCuffCuts(im
         resultImg(y:y2, max(x2-lw,1):x2, 2:3) = 0;
     end
 
-    processingTime = toc;
+    processingTime = toc; % Return elapsed time
 end

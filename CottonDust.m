@@ -1,5 +1,6 @@
 function [resultImg, dustCount, dustPercentage, processingTime] = CottonDust(img)
     
+    % Start timer
     tic;
 
     % STEP 1: Convert to grayscale
@@ -30,7 +31,7 @@ function [resultImg, dustCount, dustPercentage, processingTime] = CottonDust(img
     gloveMask = imclose(gloveMask, strel('disk', 12));
     gloveMask = bwareafilt(gloveMask, 1);
 
-    % Shrink glove mask to avoid edge artifacts
+    % Erode glove mask by 8px to exclude boundary pixels prone to lighting artifacts
     gloveMask2 = imerode(gloveMask, strel('disk', 8));
     if nnz(gloveMask2) < 1000
         gloveMask2 = gloveMask; 
@@ -70,7 +71,7 @@ function [resultImg, dustCount, dustPercentage, processingTime] = CottonDust(img
     Vg = V(gloveMask2);
     Sg = S(gloveMask2);
 
-    % Robust thresholds using sorted values 
+    % Adaptive thresholds from glove pixel distribution (percentile-based) 
     Vthr = percentile_manual(Vg, 25);      % dust tends to be darker than this
     Sthr = percentile_manual(Sg, 60);      % dust often slightly more saturated than glove fibers
 
@@ -152,10 +153,13 @@ function [resultImg, dustCount, dustPercentage, processingTime] = CottonDust(img
         resultImg(y:y2, max(x2-lw,1):x2, 2:3) = 0;
     end
     
-    processingTime = toc;
+    processingTime = toc; % Return elapsed time
 end
 
 % Helper to calculate percentile
+% percentile_manual: Returns the q-th percentile of vector x
+% Inputs:  x - numeric vector, q - percentile (0–100)
+% Output:  p - interpolated percentile value
 function p = percentile_manual(x, q)
     x = x(:);
     x = x(~isnan(x));

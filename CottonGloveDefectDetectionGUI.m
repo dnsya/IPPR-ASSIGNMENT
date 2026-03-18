@@ -409,7 +409,7 @@ function CottonGloveDefectDetectionGUI
         set(txtStatus,  'String', statusMsg,  'ForegroundColor', statusColor);
     end
 
-    % ---- Clear Image ------------------------------------------------
+    % Clear Image 
     function clearImage(~, ~)
         img = [];
         cla(axesMain);
@@ -425,7 +425,7 @@ function CottonGloveDefectDetectionGUI
         set(btnReset,       'Enable', 'off');
     end
 
-    % ---- Exit -------------------------------------------------------
+    % Exit
     function exitApp(~, ~)
         selection = questdlg('Are you sure you want to exit?', ...
                              'Exit Confirmation', 'Yes', 'No', 'No');

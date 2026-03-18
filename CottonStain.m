@@ -1,8 +1,9 @@
 function [resultImg, numStains, stainPercentage, processingTime] = CottonStain(img)
 
+    % Start timer
     tic;
 
-    % Step 1: Ensure RGB
+    % Step 1: Ensure RGB format and convert to double precision
     if size(img,3) == 1
         rgbImg = cat(3, img, img, img);
     else
@@ -23,14 +24,14 @@ function [resultImg, numStains, stainPercentage, processingTime] = CottonStain(i
     gloveMask = imclose(gloveMask, strel('disk', 10));
     gloveMask = bwareafilt(gloveMask, 1);
 
-    % Remove wrist / arm area
+    % Crop bottom 25% of glove bounding box to exclude wrist and arm regions
     stats = regionprops(gloveMask, 'BoundingBox');
     bb = stats.BoundingBox;
 
     cutoffY = round(bb(2) + 0.75 * bb(4));
     gloveMask(cutoffY:end, :) = 0;
 
-    % Safety
+    % Early exit if glove mask is empty after wrist crop
     if ~any(gloveMask(:))
         resultImg = im2uint8(rgbImg);
         numStains = 0;
@@ -51,7 +52,7 @@ function [resultImg, numStains, stainPercentage, processingTime] = CottonStain(i
     b = labImg(:,:,3);
     chroma = hypot(a, b);
 
-    % Strong purple detection
+    % Hue gate for purple/violet stains: H in (0.70, 0.90) on [0,1] HSV scale
     huePurple = (H > 0.70) & (H < 0.90);
 
     stainCandidate = gloveMask & ...
@@ -61,12 +62,12 @@ function [resultImg, numStains, stainPercentage, processingTime] = CottonStain(i
         (V < 0.90) & ...
         huePurple;
 
-    % Morphological cleanup
+    % Morphological cleanup: remove small blobs, close gaps, fill holes
     stainMask = bwareaopen(stainCandidate, 80);
     stainMask = imclose(stainMask, strel('disk', 4));
     stainMask = imfill(stainMask, 'holes');
 
-    % Remove false positives
+    % Remove false positives: reject regions smaller than 100px or near-linear (eccentricity ≥ 0.98)
     CC = bwconncomp(stainMask);
     stats = regionprops(CC, 'Area', 'Eccentricity');
 
@@ -83,7 +84,7 @@ function [resultImg, numStains, stainPercentage, processingTime] = CottonStain(i
 
     stainMask = cleanMask;
 
-    % Step 4: Count Stains
+    % Step 4: Compute stain count and coverage percentage
     glovePixels = nnz(gloveMask);
     stainPixels = nnz(stainMask);
     stainPercentage = 100 * (stainPixels / max(1, glovePixels));
@@ -113,11 +114,11 @@ function [resultImg, numStains, stainPercentage, processingTime] = CottonStain(i
         end
     end
 
-    processingTime = toc;
+    processingTime = toc; % Return elapsed time
 end
 
 
-% ===== Custom rectangle drawing =====
+% Custom rectangle drawing
 function out = insertRectFallback(in, x, y, w, h, lineWidth)
 
     if nargin < 6, lineWidth = 4; end
