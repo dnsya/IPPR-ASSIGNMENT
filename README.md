@@ -26,7 +26,12 @@ This project focuses on detecting defects in different types of gloves using ima
 ### Latex Defects
 - Stuff
 
+### Rubber Defects
+- Burn Mark
+- Stain
+- Fused/Sticky Finger
+
 ### Nitrile Defects
 - Hole  
 - Stain  
-- Missing Finger  
+- Missing Finger 
