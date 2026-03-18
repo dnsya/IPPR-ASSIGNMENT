@@ -1,8 +1,8 @@
 function [resultImg, numStains, stainPercentage, processingTime] = CottonStain(img)
 
-    tStart = tic;
+    tic;
 
-    % ===== 0) Ensure RGB =====
+    % Step 1: Ensure RGB
     if size(img,3) == 1
         rgbImg = cat(3, img, img, img);
     else
@@ -10,7 +10,7 @@ function [resultImg, numStains, stainPercentage, processingTime] = CottonStain(i
     end
     rgbD = im2double(rgbImg);
 
-    % ===== 1) Robust glove segmentation (bright object) =====
+    % Step 2: Glove Segmentation
     Igray = rgb2gray(rgbD);
     Is = imgaussfilt(Igray, 2);
 
@@ -20,9 +20,17 @@ function [resultImg, numStains, stainPercentage, processingTime] = CottonStain(i
 
     gloveMask = imfill(gloveMask, 'holes');
     gloveMask = bwareaopen(gloveMask, 8000);
-    gloveMask = imclose(gloveMask, strel('disk', 12));
+    gloveMask = imclose(gloveMask, strel('disk', 10));
     gloveMask = bwareafilt(gloveMask, 1);
 
+    % Remove wrist / arm area
+    stats = regionprops(gloveMask, 'BoundingBox');
+    bb = stats.BoundingBox;
+
+    cutoffY = round(bb(2) + 0.75 * bb(4));
+    gloveMask(cutoffY:end, :) = 0;
+
+    % Safety
     if ~any(gloveMask(:))
         resultImg = im2uint8(rgbImg);
         numStains = 0;
@@ -31,7 +39,7 @@ function [resultImg, numStains, stainPercentage, processingTime] = CottonStain(i
         return;
     end
 
-    % ===== 2) Color-based stain detection (HSV + Lab chroma) =====
+    % Step 3: Color Features
     hsvImg = rgb2hsv(rgbD);
     H = hsvImg(:,:,1);
     S = hsvImg(:,:,2);
@@ -43,27 +51,39 @@ function [resultImg, numStains, stainPercentage, processingTime] = CottonStain(i
     b = labImg(:,:,3);
     chroma = hypot(a, b);
 
-    huePurpleBlue = (H > 0.60) & (H < 0.92);
+    % Strong purple detection
+    huePurple = (H > 0.70) & (H < 0.90);
 
     stainCandidate = gloveMask & ...
-        (S > 0.15) & ...
-        (chroma > 12) & ...
-        (L < 97) & ...
-        (V < 0.98) & ...
-        huePurpleBlue;
+        (S > 0.25) & ...
+        (chroma > 20) & ...
+        (L < 85) & ...
+        (V < 0.90) & ...
+        huePurple;
 
-    stainMask = bwareaopen(stainCandidate, 40);
-    stainMask = imclose(stainMask, strel('disk', 3));
+    % Morphological cleanup
+    stainMask = bwareaopen(stainCandidate, 80);
+    stainMask = imclose(stainMask, strel('disk', 4));
     stainMask = imfill(stainMask, 'holes');
 
-    if ~any(stainMask(:))
-        stainCandidate2 = gloveMask & (S > 0.12) & (chroma > 14) & (L < 97) & (V < 0.98);
-        stainMask = bwareaopen(stainCandidate2, 40);
-        stainMask = imclose(stainMask, strel('disk', 3));
-        stainMask = imfill(stainMask, 'holes');
+    % Remove false positives
+    CC = bwconncomp(stainMask);
+    stats = regionprops(CC, 'Area', 'Eccentricity');
+
+    cleanMask = false(size(stainMask));
+
+    for k = 1:CC.NumObjects
+        area = stats(k).Area;
+        ecc  = stats(k).Eccentricity;
+
+        if area > 100 && ecc < 0.98
+            cleanMask(CC.PixelIdxList{k}) = true;
+        end
     end
 
-    % ===== 3) Count + percentage =====
+    stainMask = cleanMask;
+
+    % Step 4: Count Stains
     glovePixels = nnz(gloveMask);
     stainPixels = nnz(stainMask);
     stainPercentage = 100 * (stainPixels / max(1, glovePixels));
@@ -71,36 +91,35 @@ function [resultImg, numStains, stainPercentage, processingTime] = CottonStain(i
     CC = bwconncomp(stainMask);
     numStains = CC.NumObjects;
 
-    % ===== 4) Annotate: PLAIN RED BOX ONLY =====
+    % Step 5: Draw red bounding boxes
     resultImg = im2uint8(rgbImg);
 
     if numStains > 0
         stats = regionprops(CC, 'BoundingBox', 'Area');
-        hasInsertShape = (exist('insertShape', 'file') == 2);
 
         for k = 1:numel(stats)
-            if stats(k).Area < 40
+            if stats(k).Area < 100
                 continue;
             end
+
             bb = stats(k).BoundingBox;
 
-            if hasInsertShape
-                % Plain red rectangle only
-                resultImg = insertShape(resultImg, 'Rectangle', bb, ...
-                    'Color', 'red', 'LineWidth', 4);
-            else
-                % Fallback plain red rectangle only
-                x = bb(1); y = bb(2); w = bb(3); h = bb(4);
-                resultImg = insertRectFallback(resultImg, x, y, w, h, 4);
-            end
+            x = bb(1); 
+            y = bb(2); 
+            w = bb(3); 
+            h = bb(4);
+
+            resultImg = insertRectFallback(resultImg, x, y, w, h, 4);
         end
     end
 
-    processingTime = toc(tStart);
+    processingTime = toc;
 end
 
+
+% ===== Custom rectangle drawing =====
 function out = insertRectFallback(in, x, y, w, h, lineWidth)
-% Draw a plain red rectangle directly into an RGB uint8 image.
+
     if nargin < 6, lineWidth = 4; end
 
     out = in;
@@ -112,26 +131,33 @@ function out = insertRectFallback(in, x, y, w, h, lineWidth)
     y2 = min(H, ceil(y + h));
 
     t = max(1, round(lineWidth));
+
     xs = x1:x2;
     ys = y1:y2;
 
     red = uint8([255 0 0]);
 
-    % Top and bottom edges
-    rowStrip = repmat(reshape(red, 1, 1, 3), 1, numel(xs), 1);
+    % Top & Bottom
     for yy = y1:min(y1+t-1, H)
-        out(yy, xs, :) = rowStrip;
+        out(yy, xs, 1) = 255;
+        out(yy, xs, 2) = 0;
+        out(yy, xs, 3) = 0;
     end
-    for yy = max(y2-t+1, 1):y2
-        out(yy, xs, :) = rowStrip;
+    for yy = max(y2-t+1,1):y2
+        out(yy, xs, 1) = 255;
+        out(yy, xs, 2) = 0;
+        out(yy, xs, 3) = 0;
     end
 
-    % Left and right edges
-    colStrip = repmat(reshape(red, 1, 1, 3), numel(ys), 1, 1);
+    % Left & Right
     for xx = x1:min(x1+t-1, W)
-        out(ys, xx, :) = colStrip;
+        out(ys, xx, 1) = 255;
+        out(ys, xx, 2) = 0;
+        out(ys, xx, 3) = 0;
     end
-    for xx = max(x2-t+1, 1):x2
-        out(ys, xx, :) = colStrip;
+    for xx = max(x2-t+1,1):x2
+        out(ys, xx, 1) = 255;
+        out(ys, xx, 2) = 0;
+        out(ys, xx, 3) = 0;
     end
 end

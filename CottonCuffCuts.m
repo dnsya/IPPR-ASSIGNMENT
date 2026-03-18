@@ -2,26 +2,24 @@ function [resultImg, numCuts, cutPercentage, processingTime] = CottonCuffCuts(im
 
     tic;
 
-    % STEP 1: Ensure RGB and grayscale
+    % Step 1: Ensure RGB
     if size(img,3) == 1
         rgbImg = cat(3, img, img, img);
     else
         rgbImg = img;
     end
-    grayImg = rgb2gray(rgbImg);
-    grayImg = im2double(grayImg);
 
+    grayImg = im2double(rgb2gray(rgbImg));
     [rows, cols] = size(grayImg);
 
-    % STEP 2: Glove segmentation
-    % Otsu and slight bias to include glove completely
+    % Step 2: Glove Segmentation
     t = graythresh(grayImg);
-    gloveMask = grayImg > max(0.35, 0.90 * t);
+    gloveMask = grayImg > max(0.35, 0.9 * t);
 
     gloveMask = imfill(gloveMask, 'holes');
-    gloveMask = bwareaopen(gloveMask, 2000);
+    gloveMask = bwareaopen(gloveMask, 3000);
     gloveMask = imclose(gloveMask, strel('disk', 10));
-    gloveMask = bwareafilt(gloveMask, 1);  
+    gloveMask = bwareafilt(gloveMask, 1);
 
     if ~any(gloveMask(:))
         resultImg = rgbImg;
@@ -31,102 +29,92 @@ function [resultImg, numCuts, cutPercentage, processingTime] = CottonCuffCuts(im
         return;
     end
 
-    % STEP 3: Cuff ROI (bottom area)
-    cuffStartRow = round(rows * 0.55); 
-    cuffROI = false(rows, cols);
-    cuffROI(cuffStartRow:end, :) = true;
+    % Step 3: Tighter cuff region
+    stats = regionprops(gloveMask, 'BoundingBox');
+    bb = stats.BoundingBox;
 
-    cuffMask = gloveMask & cuffROI;
-    
-    % Find the lowest row of the cuff (bottom-most glove pixels in ROI)
-    cuffRows = find(any(cuffMask, 2));
-    cuffBottomRow = max(cuffRows);   % bottom edge of glove within cuff ROI
+    % Only bottom 20% = cuff area
+    cuffTop = round(bb(2) + 0.80 * bb(4));
 
-    % STEP 4: Convex hull trick (fills cut area)
-    hullMask = bwconvhull(cuffMask, 'objects');
+    cuffMask = false(rows, cols);
+    cuffMask(cuffTop:end, :) = true;
 
-    % Candidate cut area = hull - actual cuff
+    cuffMask = cuffMask & gloveMask;
+
+    % Step 4: Convex hull difference
+    hullMask = bwconvhull(cuffMask);
+
     cutCand = hullMask & ~cuffMask;
 
-    % Keep only candidates close to cuff boundary (avoid random hull fill far away)
-    nearCuff = imdilate(cuffMask, strel('disk', 12));
-    cutCand = cutCand & nearCuff;
+    % Only near cuff edge (important!)
+    edgeZone = imdilate(cuffMask, strel('disk', 6));
+    cutCand = cutCand & edgeZone;
 
-    % Clean up
-    cutCand = imclose(cutCand, strel('disk', 6));
-    cutCand = bwareaopen(cutCand, 400);   % remove tiny noise
+    % Step 5: Strong cleanup
+    cutCand = imclose(cutCand, strel('disk', 5));
+    cutCand = bwareaopen(cutCand, 600);   % remove dust completely
 
-    % STEP 5: Component filtering
+    % Step 6: Shape filtering
     cc = bwconncomp(cutCand);
-    stats = regionprops(cc, 'Area', 'BoundingBox');
+    stats = regionprops(cc, 'Area', 'BoundingBox', 'Extent');
 
-    valid = false(cc.NumObjects, 1);
-
-    minArea = 800;       
-    maxArea = 80000;      
-    
-    bottomTol = 12;
+    validMask = false(rows, cols);
+    numCuts = 0;
 
     for k = 1:cc.NumObjects
-        pix = cc.PixelIdxList{k};
-        [r, ~] = ind2sub(size(cutCand), pix);
         A = stats(k).Area;
+        ext = stats(k).Extent;   % compactness measure
 
-        % Cuts are usually a big missing chunk; solidity tends to be moderate
-        if A >= minArea && A <= maxArea && max(r) >= (cuffBottomRow - bottomTol)
-            valid(k) = true;
-        end
-    end
-    
-    validIdx = find(valid);
-    if ~isempty(validIdx)
-        [~, m] = max([stats(validIdx).Area]);
-        keep = validIdx(m);
-    
-        valid(:) = false;
-        valid(keep) = true;
-    end
-    
-    % Build final cut mask
-    finalMask = false(rows, cols);
-    for k = 1:cc.NumObjects
-        if valid(k)
-            finalMask(cc.PixelIdxList{k}) = true;
+        bb2 = stats(k).BoundingBox;
+        width = bb2(3);
+        height = bb2(4);
+
+        % Strict Cut Rules
+        if A > 1000 && ...          % must be large
+           width > 20 && ...        % must be wide
+           height > 15 && ...       % not a thin line
+           ext < 0.8               % irregular shape (cut-like)
+
+            validMask(cc.PixelIdxList{k}) = true;
+            numCuts = numCuts + 1;
         end
     end
 
-    numCuts = nnz(valid);
-
-    % STEP 6: Percentage of cuff area
-    cutPixels  = nnz(finalMask);
+    % Step 7: Count Percentage
+    cutPixels  = nnz(validMask);
     cuffPixels = nnz(cuffMask);
-    cutPercentage = (cutPixels / max(cuffPixels,1)) * 100;
+    cutPercentage = 100 * (cutPixels / max(cuffPixels,1));
 
-    % STEP 7: Display results in red boxes
+    % Step 8: Draw bounding boxes
     resultImg = im2uint8(rgbImg);
 
-    cc2 = bwconncomp(finalMask);
+    cc2 = bwconncomp(validMask);
     stats2 = regionprops(cc2, 'BoundingBox');
 
     for k = 1:numel(stats2)
-        bbox = stats2(k).BoundingBox;
-        x = round(bbox(1)); y = round(bbox(2));
-        w = round(bbox(3)); h = round(bbox(4));
+        bb = stats2(k).BoundingBox;
+
+        x = round(bb(1)); y = round(bb(2));
+        w = round(bb(3)); h = round(bb(4));
 
         x = max(1, x); y = max(1, y);
         x2 = min(cols, x + w);
         y2 = min(rows, y + h);
 
         lw = 3;
+
         % top
         resultImg(y:min(y+lw,y2), x:x2, 1) = 255;
         resultImg(y:min(y+lw,y2), x:x2, 2:3) = 0;
+
         % bottom
         resultImg(max(y2-lw,1):y2, x:x2, 1) = 255;
         resultImg(max(y2-lw,1):y2, x:x2, 2:3) = 0;
+
         % left
         resultImg(y:y2, x:min(x+lw,x2), 1) = 255;
         resultImg(y:y2, x:min(x+lw,x2), 2:3) = 0;
+
         % right
         resultImg(y:y2, max(x2-lw,1):x2, 1) = 255;
         resultImg(y:y2, max(x2-lw,1):x2, 2:3) = 0;

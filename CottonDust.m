@@ -36,7 +36,7 @@ function [resultImg, dustCount, dustPercentage, processingTime] = CottonDust(img
         gloveMask2 = gloveMask; 
     end
 
-    % STEP 3: Multi-scale dust enhancement (dark dust -> bright response)
+    % STEP 3: Multi-scale dust enhancement
     Iblur = imgaussfilt(grayImg, 2);
 
     Idust = zeros(size(grayImg));
@@ -62,7 +62,7 @@ function [resultImg, dustCount, dustPercentage, processingTime] = CottonDust(img
     % Restrict detection to glove area
     BW = BW & gloveMask2;
 
-    % HSV DUST GATING
+    % HSV dust gating
     hsvImg = rgb2hsv(rgbD);
     S = hsvImg(:,:,2); % saturation
     V = hsvImg(:,:,3); % brightness
@@ -112,7 +112,7 @@ function [resultImg, dustCount, dustPercentage, processingTime] = CottonDust(img
     glovePixels = nnz(gloveMask);
     dustPercentage = (dustPixels / max(glovePixels, 1)) * 100;
 
-    % STEP 9: Draw RED bounding boxes
+    % STEP 9: Draw red boxes to show defect location
     resultImg = im2uint8(rgbImg);
 
     cc = bwconncomp(BWgrouped);
@@ -155,7 +155,7 @@ function [resultImg, dustCount, dustPercentage, processingTime] = CottonDust(img
     processingTime = toc;
 end
 
-% Helper: percentile without Statistics toolbox
+% Helper to calculate percentile
 function p = percentile_manual(x, q)
     x = x(:);
     x = x(~isnan(x));
