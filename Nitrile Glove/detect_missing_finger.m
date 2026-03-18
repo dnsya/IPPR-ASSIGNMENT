@@ -66,7 +66,7 @@ function defects = detect_missing_finger(img)
         end
     end
 
-    debug_mode = false;  % Change to false to disable debug views
+    debug_mode = true;  % Change to false to disable debug views
 
     if debug_mode
         figure('Name', 'Missing Finger Detection Debug', 'Position', [50, 100, 1100, 700]);

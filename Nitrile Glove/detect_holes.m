@@ -51,7 +51,7 @@ function defects = detect_holes(img)
         end
     end
 
-    debug_mode = false;  % Change to false to disable debug views
+    debug_mode = true;  % Change to false to disable debug views
 
     if debug_mode
         figure('Name', 'Hole Detection Debug', 'Position', [50, 100, 1100, 700]);

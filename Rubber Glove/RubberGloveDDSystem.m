@@ -332,21 +332,32 @@ classdef RubberGloveDDSystem < matlab.apps.AppBase
                     sprintf('> Found %d fused finger region(s)',numFused),'> No fused fingers detected'));
             end
 
-            if detectBurns || detectStains
-                app.addConsoleMessage('> Detecting burn marks and holes...');
-                [burnBoxes,stainBoxes,numBurns,numStains] = detect_BurnsAndStains(img,detectBurns,detectStains);
-
-                if detectBurns
-                    if numBurns>0, for i=1:size(burnBoxes,1), allBoxes{end+1}=burnBoxes(i,:); allLabels{end+1}='BURN'; allColors{end+1}='r'; end; end
-                    totalDefects = totalDefects + numBurns;
-                    app.addConsoleMessage(app.ternary(numBurns>0,sprintf('> Found %d burn mark(s)',numBurns),'> No burn marks detected'));
+            if detectBurns
+                app.addConsoleMessage('> Detecting burn marks...');
+                [burnBoxes, ~, numBurns, ~] = detect_BurnsAndStains(img, true, false);
+                if numBurns > 0
+                    for i = 1:size(burnBoxes,1)
+                        allBoxes{end+1} = burnBoxes(i,:);
+                        allLabels{end+1} = 'BURN';
+                        allColors{end+1} = 'r';
+                    end
                 end
+                totalDefects = totalDefects + numBurns;
+                app.addConsoleMessage(app.ternary(numBurns>0, sprintf('> Found %d burn mark(s)',numBurns), '> No burn marks detected'));
+            end
 
-                if detectStains
-                    if numStains>0, for i=1:size(stainBoxes,1), allBoxes{end+1}=stainBoxes(i,:); allLabels{end+1}='STAIN'; allColors{end+1}='b'; end; end
-                    totalDefects = totalDefects + numStains;
-                    app.addConsoleMessage(app.ternary(numStains>0,sprintf('> Found %d Stain(s)',numStains),'> No stains detected'));
+            if detectStains
+                app.addConsoleMessage('> Detecting stains...');
+                [~, stainBoxes, ~, numStains] = detect_BurnsAndStains(img, false, true);
+                if numStains > 0
+                    for i = 1:size(stainBoxes,1)
+                        allBoxes{end+1} = stainBoxes(i,:);
+                        allLabels{end+1} = 'STAIN';
+                        allColors{end+1} = 'b';
+                    end
                 end
+                totalDefects = totalDefects + numStains;
+                app.addConsoleMessage(app.ternary(numStains>0, sprintf('> Found %d stain(s)',numStains), '> No stains detected'));
             end
 
             % Display

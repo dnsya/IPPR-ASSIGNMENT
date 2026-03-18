@@ -1,4 +1,5 @@
 function [burnBoxes, stainBoxes, numBurns, numStains] = detect_BurnsAndStains(img, detectBurns, detectStains)
+    showDebug = true;
 
     % Resize image and extract glove mask
     [filledMask, scaleFactor, img, ~] = glovePreprocess(img);
@@ -96,86 +97,89 @@ function [burnBoxes, stainBoxes, numBurns, numStains] = detect_BurnsAndStains(im
 
 
     % --- Debug plots (comment out when not needed) ---
+    if showDebug && detectBurns
+        figure('Name','Burn Pipeline','NumberTitle','off','Units','normalized','Position',[0.05 0.05 0.90 0.85]);
 
-    % Burn pipeline
-    figure('Name','Burn Pipeline','NumberTitle','off','Units','normalized','Position',[0.05 0.05 0.90 0.85]);
+        subplot(2,4,1); imshow(img);
+        title('1. Original');
 
-    subplot(2,4,1); imshow(img);
-    title('1. Original');
+        subplot(2,4,2); imshow(filledMask);
+        title('2. Glove mask');
 
-    subplot(2,4,2); imshow(filledMask);
-    title('2. Glove mask');
+        subplot(2,4,3);
+        maskedImg = img;
+        maskedImg(repmat(~filledMask,[1 1 3])) = 0;
+        imshow(maskedImg);
+        title('3. Glove only');
 
-    subplot(2,4,3);
-    maskedImg = img;
-    maskedImg(repmat(~filledMask,[1 1 3])) = 0;
-    imshow(maskedImg);
-    title('3. Glove only');
+        ax4 = subplot(2,4,4); imagesc(V_local .* double(filledMask));
+        colormap(ax4,'parula'); colorbar;
+        title('4. V\_local');
 
-    subplot(2,4,4); imagesc(V_local .* double(filledMask)); 
-    colormap(subplot(2,4,4),'parula'); colorbar;
-    title('4. V\_local');
+        ax5 = subplot(2,4,5); imagesc(darkDrop .* double(filledMask));
+        colormap(ax5,'hot'); colorbar;
+        title('5. darkDrop');
 
-    subplot(2,4,5); imagesc(darkDrop .* double(filledMask)); 
-    colormap(subplot(2,4,5),'hot'); colorbar;
-    title('5. darkDrop');
+        subplot(2,4,6); imshow(burnMaskCandidate);
+        title('6. Burn candidate');
 
-    subplot(2,4,6); imshow(burnMaskCandidate);
-    title('6. Burn candidate');
+        subplot(2,4,7); imshow(burnMask);
+        title('7. Burn mask cleaned');
 
-    subplot(2,4,7); imshow(burnMask);
-    title('7. Burn mask cleaned');
-
-    subplot(2,4,8); imshow(img); hold on;
-    for i = 1:size(burnBoxes,1)
-        bb = burnBoxes(i,:);
-        rectangle('Position',bb,'EdgeColor','r','LineWidth',2);
-        text(bb(1),bb(2)-5,sprintf('Burn %d',i),'Color','r','FontSize',8,'FontWeight','bold');
+        subplot(2,4,8); imshow(img); hold on;
+        for i = 1:size(burnBoxes,1)
+            bb = burnBoxes(i,:);
+            rectangle('Position',bb,'EdgeColor','r','LineWidth',2);
+            text(bb(1),bb(2)-5,sprintf('Burn %d',i),'Color','r','FontSize',8,'FontWeight','bold');
+        end
+        hold off;
+        title(sprintf('8. Burns: %d', numBurns));
     end
-    hold off;
-    title(sprintf('8. Burns: %d', numBurns));
 
-    % Stain pipeline
-    figure('Name','Stain Pipeline','NumberTitle','off','Units','normalized','Position',[0.05 0.05 0.90 0.85]);
+    if showDebug && detectStains
+        figure('Name','Stain Pipeline','NumberTitle','off','Units','normalized','Position',[0.05 0.05 0.90 0.85]);
 
-    subplot(2,4,1); imshow(img);
-    title('1. Original');
+        subplot(2,4,1); imshow(img);
+        title('1. Original');
 
-    subplot(2,4,2); imshow(filledMask);
-    title('2. Glove mask');
+        subplot(2,4,2); imshow(filledMask);
+        title('2. Glove mask');
 
-    subplot(2,4,3);
-    maskedImg = img;
-    maskedImg(repmat(~filledMask,[1 1 3])) = 0;
-    imshow(maskedImg);
-    title('3. Glove only');
+        subplot(2,4,3);
+        maskedImg = img;
+        maskedImg(repmat(~filledMask,[1 1 3])) = 0;
+        imshow(maskedImg);
+        title('3. Glove only');
 
-    subplot(2,4,4); imagesc(H_local .* double(filledMask)); 
-    colormap(subplot(2,4,4),'parula'); colorbar;
-    title('4. H\_local');
+        ax4 = subplot(2,4,4); imagesc(H_local .* double(filledMask));
+        colormap(ax4,'parula'); colorbar;
+        title('4. H\_local');
 
-    subplot(2,4,5); imagesc(hueShift .* double(filledMask)); 
-    colormap(subplot(2,4,5),'hot'); colorbar;
-    title('5. hueShift');
+        ax5 = subplot(2,4,5); imagesc(hueShift .* double(filledMask));
+        colormap(ax5,'hot'); colorbar;
+        title('5. hueShift');
 
-    subplot(2,4,6); imshow(stainMaskCandidate);
-    title('6. Stain candidate');
+        subplot(2,4,6); imshow(stainMaskCandidate);
+        title('6. Stain candidate');
 
-    subplot(2,4,7); imshow(stainMask);
-    title('7. Stain mask cleaned');
+        subplot(2,4,7); imshow(stainMask);
+        title('7. Stain mask cleaned');
 
-    subplot(2,4,8); imshow(img); hold on;
-    for i = 1:size(stainBoxes,1)
-        bb = stainBoxes(i,:);
-        rectangle('Position',bb,'EdgeColor','b','LineWidth',2);
-        text(bb(1),bb(2)-5,sprintf('Stain %d',i),'Color','b','FontSize',8,'FontWeight','bold');
+        subplot(2,4,8); imshow(img); hold on;
+        for i = 1:size(stainBoxes,1)
+            bb = stainBoxes(i,:);
+            rectangle('Position',bb,'EdgeColor','b','LineWidth',2);
+            text(bb(1),bb(2)-5,sprintf('Stain %d',i),'Color','b','FontSize',8,'FontWeight','bold');
+        end
+        hold off;
+        title(sprintf('8. Stains: %d', numStains));
     end
-    hold off;
-    title(sprintf('8. Stains: %d', numStains));
 
     burnBoxes  = burnBoxes  * scaleFactor;
     stainBoxes = stainBoxes * scaleFactor;
 end
+
+
 
 
 function boxes = extractBoxes(mask)
