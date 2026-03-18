@@ -1,2 +1,4 @@
 *.asv
 detect_BurnsAndHoles.m
+detect_BurnsAndStains_Final.m
+detect_BurnsAndStains_Ril.m

@@ -47,5 +47,36 @@ function [fusedBoxes, numFused] = detect_StickyFingers(img)
             end
         end
     end
+
     numFused = size(fusedBoxes, 1);
+
+    % --- Debug plot (comment out when not needed) ---
+    figure('Name','Sticky Fingers Pipeline','NumberTitle','off','Units','normalized','Position',[0.05 0.05 0.90 0.85]);
+
+    subplot(2,3,1); imshow(imgResized);
+    title('1. Original');
+
+    subplot(2,3,2); imshow(filledMask);
+    title('2. Glove mask');
+
+    subplot(2,3,3);
+    maskedImg = imgResized;
+    maskedImg(repmat(~filledMask,[1 1 3])) = 0;
+    imshow(maskedImg);
+    title('3. Glove only');
+
+    subplot(2,3,4); imshow(palmImg);
+    title('4. Palm mask');
+
+    subplot(2,3,5); imshow(fingerMask);
+    title('5. Finger mask');
+
+    subplot(2,3,6); imshow(imgResized); hold on;
+    for i = 1:size(fusedBoxes,1)
+        bb = fusedBoxes(i,:) / scaleFactor;
+        rectangle('Position',bb,'EdgeColor','r','LineWidth',2);
+        text(bb(1),bb(2)-5,sprintf('Fused %d',i),'Color','r','FontSize',8,'FontWeight','bold');
+    end
+    hold off;
+    title(sprintf('6. Fused fingers: %d', numFused));
 end

@@ -14,4 +14,5 @@ function [filledMask, scaleFactor, img, grayImg] = glovePreprocess(img)
     bwImg = imclose(bwImg, strel('disk', 3));
     filledMask = imfill(bwImg, 'holes');
     filledMask = bwareafilt(filledMask, 1);
+    
 end
