@@ -1,4 +1,4 @@
-classdef RubberGloveDDSystem < matlab.apps.AppBase
+classdef rubber_glove_gui < matlab.apps.AppBase
     % Glove Defect Detection App (Optimized & Fully Fixed)
 
     %% Properties
@@ -453,7 +453,7 @@ classdef RubberGloveDDSystem < matlab.apps.AppBase
 
     %% App Creation / Deletion
     methods (Access = public)
-        function app = RubberGloveDDSystem
+        function app = rubber_glove_gui
             clc;
             close all;
             app.createComponents();

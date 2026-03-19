@@ -24,7 +24,14 @@ This project focuses on detecting defects in different types of gloves using ima
 ## ️Defect Types
 
 ### Latex Defects
-- Stuff
+- Tear
+- Stain
+- Contamination
+
+### Cotton Defects
+- Cuff Cuts
+- Stain
+- Dust Particles
 
 ### Rubber Defects
 - Burn Mark

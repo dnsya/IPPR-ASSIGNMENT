@@ -87,8 +87,8 @@ function [tearMask, tearStats, numTears] = detect_tears(I, gloveMask)
     % Build a skin-probability map for display
     skinChroma = rNorm .* double(gloveMask);   % rNorm inside glove only
 
-    % Highlight accepted tear regions in green, rejected in red
-    labelImg = labelmatrix(CC);
+    % Highlight accepted tear regions in red overlay, rejected in green overlay
+    labelImg     = labelmatrix(CC);
     acceptedMask = ismember(labelImg, find(validTears));
     rejectedMask = ismember(labelImg, find(~validTears & cellfun(@numel, CC.PixelIdxList) > 0));
 
@@ -97,40 +97,82 @@ function [tearMask, tearStats, numTears] = detect_tears(I, gloveMask)
     overlayRGB(:,:,2) = overlayRGB(:,:,2) + 0.45 .* double(rejectedMask);
     overlayRGB        = min(overlayRGB, 1);
 
-    figure('Name', 'Tear Detection Debug', 'NumberTitle', 'off');
+    figure('Name', 'Tear Detection Debug', 'NumberTitle', 'off', ...
+           'Color', [0.15 0.15 0.15], 'Position', [100 100 1200 700]);
 
+    % ── Panel 1: Preprocessed Grayscale ──────────────────────────────────────
     subplot(2, 3, 1)
     imshow(Igray, [])
-    title('Preprocessed Grayscale')
+    title('1. Preprocessed Grayscale', ...
+          'Color', 'white', 'FontSize', 11, 'FontWeight', 'bold')
+    set(gca, 'Color', [0.15 0.15 0.15])
 
+    % ── Panel 2: Skin Chromaticity Map ────────────────────────────────────────
     subplot(2, 3, 2)
     imshow(skinChroma, [])
-    title('Skin Chromaticity (rNorm inside glove)')
+    title('2. Skin Chromaticity (rNorm inside glove)', ...
+          'Color', 'white', 'FontSize', 11, 'FontWeight', 'bold')
+    set(gca, 'Color', [0.15 0.15 0.15])
 
+    % ── Panel 3: Skin Mask after morphology ───────────────────────────────────
     subplot(2, 3, 3)
     imshow(skinMask)
-    title('Skin Mask (after morphology)')
+    title('3. Skin Mask (after morphology)', ...
+          'Color', 'white', 'FontSize', 11, 'FontWeight', 'bold')
+    set(gca, 'Color', [0.15 0.15 0.15])
 
+    % ── Panel 4: Accepted vs Rejected regions ─────────────────────────────────
     subplot(2, 3, 4)
     imshow(overlayRGB)
-    title('Accepted (green) vs Rejected (red) Regions')
+    title('4. Accepted (red) vs Rejected (green) Regions', ...
+          'Color', 'white', 'FontSize', 11, 'FontWeight', 'bold')
+    set(gca, 'Color', [0.15 0.15 0.15])
 
+    % ── Panel 5: Annotated Original ───────────────────────────────────────────
     subplot(2, 3, 5)
     imshow(I)
     hold on
     for i = 1:numTears
-        rectangle('Position', tearStats(i).BoundingBox, ...
-                  'EdgeColor', 'r', 'LineWidth', 2)
-        plot(tearStats(i).Centroid(1), tearStats(i).Centroid(2), ...
-             'r+', 'MarkerSize', 14, 'LineWidth', 2)
-        text(tearStats(i).Centroid(1) + 10, tearStats(i).Centroid(2), ...
-             sprintf('T%d', i), 'Color', 'r', 'FontWeight', 'bold')
-    end
-    title(['Detected Tears: ' num2str(numTears)])
-    hold off
+        bb = tearStats(i).BoundingBox;
+        cx = tearStats(i).Centroid(1);
+        cy = tearStats(i).Centroid(2);
 
+        % Bounding box
+        rectangle('Position', bb, 'EdgeColor', [1 0.3 0.3], 'LineWidth', 2)
+
+        % Centroid marker
+        plot(cx, cy, '+', 'Color', [1 0.3 0.3], ...
+             'MarkerSize', 12, 'LineWidth', 2)
+
+        % Label with area
+        text(bb(1), bb(2) - 6, sprintf('T%d  (%.0f px)', i, tearStats(i).Area), ...
+             'Color', [1 0.3 0.3], 'FontSize', 9, 'FontWeight', 'bold', ...
+             'BackgroundColor', [0 0 0 0.5])
+    end
+
+    if numTears == 0
+        titleStr = 'Detected Tears: None';
+        titleCol = [0.6 1.0 0.6];   % green — intact glove
+    else
+        titleStr = sprintf('Detected Tears: %d', numTears);
+        titleCol = [1.0 0.4 0.4];   % red — tears found
+    end
+
+    title(titleStr, 'Color', titleCol, 'FontSize', 11, 'FontWeight', 'bold')
+    hold off
+    set(gca, 'Color', [0.15 0.15 0.15])
+
+    % ── Panel 6: Final Tear Mask ──────────────────────────────────────────────
     subplot(2, 3, 6)
     imshow(tearMask)
-    title('Final Tear Mask')
+    title('6. Final Tear Mask', ...
+          'Color', 'white', 'FontSize', 11, 'FontWeight', 'bold')
+    set(gca, 'Color', [0.15 0.15 0.15])
+
+    % ── Figure supertitle ─────────────────────────────────────────────────────
+    sgtitle(sprintf('Tear Detection Debug  |  %d tear(s) detected', numTears), ...
+            'Color', 'white', 'FontSize', 13, 'FontWeight', 'bold')
+
+    set(gcf, 'Color', [0.15 0.15 0.15])
 
 end
