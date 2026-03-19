@@ -167,7 +167,7 @@ function main_glove_selection_gui
                 addpath(latexFolder);
             end
             
-            glove_defect_detection_gui;  % Your existing GUI
+            latex_glove_gui;  % Your existing GUI
         catch ME
             errordlg(['Failed to launch Latex Glove system: ' ME.message], ...
                      'Launch Error');
@@ -185,8 +185,8 @@ function main_glove_selection_gui
             end
             
             % Check if file exists
-            if exist('assignment.m', 'file')
-                assignment;
+            if exist('nitrile_glove_gui.m', 'file')
+                nitrile_glove_gui;
             else
                 msgbox({'Nitrile Glove detection system not yet implemented.', ...
                         '', ...
@@ -210,7 +210,7 @@ function main_glove_selection_gui
                 addpath(cottonFolder);
             end
             
-            CottonGloveDefectDetectionGUI;  %  cotton GUI
+            cotton_glove_gui;  %  cotton GUI
         catch ME
             errordlg(['Failed to launch Cotton Glove system: ' ME.message], ...
                      'Launch Error');
@@ -228,8 +228,8 @@ function main_glove_selection_gui
             end
             
             % Check if file exists
-            if exist('RubberGloveDDSystem.m', 'file')
-                RubberGloveDDSystem;
+            if exist('rubber_glove_gui.m', 'file')
+                rubber_glove_gui;
             else
                 msgbox({'Rubber Glove detection system not yet implemented.', ...
                         '', ...
